@@ -376,7 +376,7 @@ class Dataset:
                  features_add_scaler: StandardScaler = None,
                  graph_kernel_type: Literal['graph', 'pre-computed'] = None):
         self.data = data
-        self.unify_datatype(self.X_graph)
+        self.unify_datatype()
         self.features_mol_normalize = False
         self.features_add_normalize = False
         self.features_mol_scaler = features_mol_scaler
@@ -494,7 +494,7 @@ class Dataset:
             return self.data[0].features_add.shape[1]
 
     def copy(self):
-        return copy.copy(self)
+        return copy.deepcopy(self)
     """
     def set_dataset_status(self, graph_kernel_type: Literal['graph', 'preCalc']):
         self.graph_kernel_type = graph_kernel_type
@@ -526,9 +526,9 @@ class Dataset:
         else:
             self.features_add_scaler = None
 
-    def unify_datatype(self, X):
+    def unify_datatype(self, X=None):
         if X is None:
-            return
+            X = self.X_graph
         for i in range(X.shape[1]):
             self._unify_datatype(X[:, i])
 
@@ -614,11 +614,11 @@ class Dataset:
     """
     @classmethod
     def from_df(cls, df: pd.DataFrame,
-                pure_columns: List[str],
-                mixture_columns: List[str],
-                reaction_columns: List[str],
-                feature_columns: List[str],
-                target_columns: List[str],
+                pure_columns: List[str] = None,
+                mixture_columns: List[str] = None,
+                reaction_columns: List[str] = None,
+                feature_columns: List[str] = None,
+                target_columns: List[str] = None,
                 features_generator: List[str] = None,
                 mixture_type: Literal['single_graph', 'multi_graph'] = 'single_graph',
                 reaction_type: Literal['reaction', 'agent', 'reaction+agent'] = 'reaction',

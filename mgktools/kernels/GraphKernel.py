@@ -21,6 +21,8 @@ from graphdot.microprobability import (
     UniformProbability,
     AssignProbability
 )
+from ..data.data import Dataset
+from ..kernels.utils import get_kernel_config
 from .BaseKernelConfig import BaseKernelConfig
 from .HybridKernel import *
 from .ConvKernel import *
@@ -496,3 +498,15 @@ class GraphKernelConfig(BaseKernelConfig):
                 composition=composition,
                 hybrid_rule='product',
             )
+
+    def get_precomputed_kernel_config(self, dataset: Dataset):
+        dataset.set_ignore_features_add(True)
+        N_RBF = self.N_RBF
+        self.N_RBF = 0
+        self._update_kernel()
+        kernel_dict = self.get_kernel_dict(dataset.X_mol, dataset.X_repr.ravel())
+        dataset.set_ignore_features_add(False)
+        self.N_RBF = N_RBF
+        return get_kernel_config(dataset,
+                                 graph_kernel_type='pre-computed',
+                                 kernel_dict=kernel_dict)

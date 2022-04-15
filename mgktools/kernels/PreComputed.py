@@ -10,7 +10,7 @@ from .BaseKernelConfig import BaseKernelConfig
 from .HybridKernel import *
 
 
-class PreCalcKernel:
+class PreComputedKernel:
     def __init__(self, X: np.ndarray, K: np.ndarray, theta: np.ndarray):
         idx = np.argsort(X)
         self.X = X[idx]
@@ -71,7 +71,7 @@ class PreCalcKernel:
         )
 
 
-class PreComputed(BaseKernelConfig):
+class PreComputedKernelConfig(BaseKernelConfig):
     def __init__(self, kernel_dict: Dict,
                  N_RBF: int = 0,
                  sigma_RBF: List[float] = None,
@@ -95,4 +95,4 @@ class PreComputed(BaseKernelConfig):
         X = kernel_dict['X']
         K = kernel_dict['K']
         theta = kernel_dict['theta']
-        return PreCalcKernel(X, K, theta)
+        return PreComputedKernel(X, K, theta)

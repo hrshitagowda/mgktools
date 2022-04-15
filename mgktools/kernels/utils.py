@@ -108,5 +108,5 @@ def get_kernel_config(dataset: Dataset,
             'sigma_RBF': sigma_RBF,
             'sigma_RBF_bounds': sigma_RBF_bounds,  # * N_RBF,
         }
-        from mgktools.kernels.PreComputed import PreComputed
-        return PreComputed(**params)
+        from mgktools.kernels.PreComputed import PreComputedKernelConfig
+        return PreComputedKernelConfig(**params)

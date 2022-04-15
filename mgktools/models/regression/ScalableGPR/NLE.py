@@ -123,9 +123,10 @@ class NaiveLocalExpertGP:
                 return_std
             )
             for z in Z)
-        y_mean = np.asarray([result[0][0] for result in results])
         if return_std:
+            y_mean = np.asarray([result[0][0] for result in results])
             y_std = np.asarray([result[1][0] for result in results])
             return y_mean, y_std
         else:
+            y_mean = np.asarray([result[0] for result in results])
             return y_mean

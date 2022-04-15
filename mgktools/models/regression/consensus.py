@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from typing import Dict, Iterator, List, Optional, Union, Literal, Tuple
 import numpy as np
 import copy
 import threading
@@ -50,8 +51,11 @@ def _accumulate_prediction(predict, X, out, out_u, lock, return_std=False):
 
 
 class ConsensusRegressor:
-    def __init__(self, model, n_estimators=100, n_sample_per_model=2000,
-                 n_jobs=1, verbose=0, consensus_rule='smallest_uncertainty',):
+    def __init__(self, model,
+                 n_estimators: int = 100,
+                 n_sample_per_model: int = 2000,
+                 n_jobs: int = 1, verbose=0,
+                 consensus_rule: Literal['smallest_uncertainty', 'weight_uncertainty', 'mean'] = 'smallest_uncertainty',):
         self.model = model
         self.models = []
         self.n_estimators = n_estimators

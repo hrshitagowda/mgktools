@@ -33,7 +33,7 @@ def predict_(predict, X, return_std=False, return_cov=False, memory_save=True,
 
 class GPR(GaussianProcessRegressor):
     def __init__(self, *args, **kwargs):
-        self.batch_size = kwargs.pop('batch_size')
+        self.batch_size = kwargs.pop('batch_size', None)
         super().__init__(*args, **kwargs)
         if self.optimizer == 'sgd':
             self.optimizer = sgd

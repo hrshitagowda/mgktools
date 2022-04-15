@@ -321,7 +321,7 @@ class AtomBondFeaturesConfig:
             else:
                 node['ReactingCenter'] = 0.0
         if self.set_group:
-            node['GroupID'] = [atom.GetAtomicNum()]
+            node['GroupID'] = np.asarray([atom.GetAtomicNum()])
             # assert node['GroupID'][0] in self.group_dict
             for key, value in self.group_dict.items():
                 node[value] = 1.0 if key in node['GroupID'] else 0.0
