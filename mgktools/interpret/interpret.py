@@ -136,7 +136,7 @@ def interpret_atoms(smiles_to_be_interpret: str,
     graph_hyperparameters = [json.load(open(mgk_hyperparameters_file))]
     kernel = GraphKernelConfig(N_MGK=1,
                                graph_hyperparameters=graph_hyperparameters).kernel
-    gpr = GPR(kernel=kernel, alpha=alpha).fit(graphs_train, targets_train)
+    gpr = GPR(kernel=kernel, alpha=alpha, normalize_y=True).fit(graphs_train, targets_train)
     y_pred, y_std = gpr.predict([graph_to_be_interpret], return_std=True)
     y_nodes = gpr.predict(node_graphs)
     for i, atom in enumerate(mol.GetAtoms()):
@@ -168,12 +168,12 @@ def interpret_substructures(smarts: str,
     return contributed_values
 
 
-def get_interpretable_mols(smiles_train: List[str],
-                           targets_train: List[float],
-                           interpreted_smiles: List[str] = None,
-                           alpha: float = 0.01,
-                           mgk_hyperparameters_file: str = additive_pnorm,
-                           n_jobs: int = 1):
+def get_interpreted_mols(smiles_train: List[str],
+                         targets_train: List[float],
+                         smiles_to_be_interpret: List[str] = None,
+                         alpha: float = 0.01,
+                         mgk_hyperparameters_file: str = additive_pnorm,
+                         n_jobs: int = 1):
     """Interpret all molecules, and save the interpretation in the RDKit Mol object.
 
     Parameters
@@ -182,7 +182,7 @@ def get_interpretable_mols(smiles_train: List[str],
         SMILES strings of molecules of training set.
     targets_train: list of float
         the target property.
-    interpreted_smiles: list of string
+    smiles_to_be_interpret: list of string
         SMILES strings of molecules to be interpreted.
     alpha: float
         data noise of Gaussian process regression.
@@ -195,26 +195,18 @@ def get_interpretable_mols(smiles_train: List[str],
     -------
     list of RDKit Mol object, the interpretation of all atoms is saved inside.
     """
-    df = pd.DataFrame({'smiles': smiles_train, 'target': targets_train})
-    train = Dataset.from_df(df, pure_columns=['smiles'], target_columns=['target'], n_jobs=n_jobs)
-    train.graph_kernel_type = 'graph'
-    kernel_config = get_kernel_config(
-        train,
-        graph_kernel_type='graph',
-        # arguments for marginalized graph kernel
-        mgk_hyperparameters_files=[mgk_hyperparameters_file],
-    )
-    kernel = kernel_config.kernel
-
-    if interpreted_smiles is None:
-        interpreted_smiles = smiles_train
-
-    mols = [Chem.MolFromSmiles(s) for s in interpreted_smiles]
-    gpr = GPR(kernel=kernel, alpha=alpha).fit(train.X, train.y)
-    for mol in tqdm(mols, total=len(mols)):
+    mols_train = [Chem.MolFromSmiles(s) for s in smiles_train]
+    graphs = [HashGraph.from_rdkit(mol) for mol in mols_train]
+    HashGraph.unify_datatype(graphs, inplace=True)
+    graph_hyperparameters = [json.load(open(mgk_hyperparameters_file))]
+    kernel = GraphKernelConfig(N_MGK=1,
+                               graph_hyperparameters=graph_hyperparameters).kernel
+    gpr = GPR(kernel=kernel, alpha=alpha, normalize_y=True).fit(graphs, targets_train)
+    mols_to_be_interpret = [Chem.MolFromSmiles(s) for s in smiles_to_be_interpret]
+    for mol in tqdm(mols_to_be_interpret, total=len(mols_to_be_interpret)):
         node_graphs = get_node_graphs(mol)
-        train.unify_datatype(node_graphs)
+        HashGraph.unify_datatype(graphs + node_graphs, inplace=True)
         y_nodes = gpr.predict(node_graphs)
         for i, atom in enumerate(mol.GetAtoms()):
             atom.SetProp('atomNote', '%.3f' % y_nodes[i])
-    return mols
+    return mols_to_be_interpret
