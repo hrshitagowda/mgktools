@@ -31,7 +31,7 @@ class Evaluator:
                  model,
                  task_type: Literal['regression', 'binary', 'multi-class'],
                  metrics: List[Metric],
-                 split_type: Literal['random', 'scaffold_balanced', 'loocv'],
+                 split_type: Literal['random', 'scaffold_balanced', 'loocv', 'assigned'],
                  split_sizes: Tuple[float, float] = None,
                  num_folds: int = 1,
                  return_std: bool = False,
@@ -89,11 +89,10 @@ class Evaluator:
         self.seed = seed
         self.verbose = verbose
 
-    def evaluate(self):
+    def evaluate(self, external_test_dataset: Optional[Dataset] = None):
         # Leave-One-Out cross validation
         if self.split_type == 'loocv':
             return self._evaluate_loocv()
-
         # Initialization
         train_metrics_results = dict()
         test_metrics_results = dict()
@@ -101,6 +100,13 @@ class Evaluator:
             train_metrics_results[metric] = []
             test_metrics_results[metric] = []
 
+        if self.split_type == 'assigned':
+            assert external_test_dataset is not None
+            dataset_train = self.dataset
+            dataset_test = external_test_dataset
+            train_metrics, test_metrics = self.evaluate_train_test(dataset_train, dataset_test,
+                                                                   train_log='train.log',
+                                                                   test_log='test.log')
         for i in range(self.num_folds):
             # data splits
             dataset_train, dataset_test = dataset_split(
@@ -157,12 +163,12 @@ class Evaluator:
 
         # save results test_*.log
         test_metrics = self._eval(X_test, y_test, repr_test, y_similar,
-                                  logfile='%s/%s' % (self.save_dir, test_log),
+                                  logfile=None if test_log is None else '%s/%s' % (self.save_dir, test_log),
                                   return_std=return_std,
                                   return_proba=proba)
         if self.evaluate_train:
             train_metrics = self._eval(X_train, y_train, repr_train, repr_train,
-                                       logfile='%s/%s' % (self.save_dir, test_log.replace('test', 'train')),
+                                       logfile=None if train_log is None else '%s/%s' % (self.save_dir, train_log),
                                        return_std=return_std,
                                        return_proba=proba)
 
@@ -236,12 +242,13 @@ class Evaluator:
         else:
             y_pred = self.model.predict(X)
             y_std = None
-        self._output_df(target=y,
-                        predict=y_pred,
-                        uncertainty=y_std,
-                        repr=repr,
-                        y_similar=y_similar). \
-            to_csv(logfile, sep='\t', index=False, float_format='%15.10f')
+        if logfile is not None:
+            self._output_df(target=y,
+                            predict=y_pred,
+                            uncertainty=y_std,
+                            repr=repr,
+                            y_similar=y_similar). \
+                to_csv(logfile, sep='\t', index=False, float_format='%15.10f')
         if y is None:
             return None
         else:

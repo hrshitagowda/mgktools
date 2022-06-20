@@ -30,7 +30,7 @@ def bayesian_optimization(save_dir: str,
                           task_type: Literal['regression', 'binary', 'multi-class'],
                           model_type: Literal['gpr', 'gpr-sod', 'gpr-nystrom', 'gpr-nle', 'svr', 'gpc', 'svc'],
                           metric: Metric,
-                          split_type: Literal['random', 'scaffold_balanced', 'loocv'],
+                          split_type: Literal['random', 'scaffold_balanced', 'loocv', 'assigned'],
                           num_iters: int = 100,
                           alpha: float = 0.01,
                           alpha_bounds: Tuple[float, float] = None,
@@ -38,7 +38,8 @@ def bayesian_optimization(save_dir: str,
                           C: float = 10,
                           C_bounds: Tuple[float, float] = None,
                           d_C: float = None,
-                          seed: int = 0
+                          seed: int = 0,
+                          external_test_dataset: Optional[Dataset] = None
                           ):
     if task_type == 'regression':
         assert model_type in ['gpr', 'gpr-sod', 'gpr-nystrom', 'gpr-nle', 'svr']
@@ -108,8 +109,8 @@ def bayesian_optimization(save_dir: str,
     fmin(objective, SPACE, algo=tpe.suggest, max_evals=num_iters,
          rstate=np.random.seed(seed))
     best_hyperdict = save_best_params(save_dir=save_dir,
-                            results=results,
-                            hyperdicts=hyperdicts,
-                            kernel_config=kernel_config)
+                                      results=results,
+                                      hyperdicts=hyperdicts,
+                                      kernel_config=kernel_config)
 
     return best_hyperdict, results, hyperdicts

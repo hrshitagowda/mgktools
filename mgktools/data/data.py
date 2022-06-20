@@ -383,7 +383,7 @@ class Dataset:
         self.features_add_scaler = features_add_scaler
         # Determine the Dataset.X.
         self.graph_kernel_type = graph_kernel_type
-        self.ignore_features_add = self.set_ignore_features_add(False)
+        self.set_ignore_features_add(False)
 
     def __len__(self) -> int:
         return len(self.data)
@@ -529,11 +529,13 @@ class Dataset:
     def unify_datatype(self, X=None):
         if X is None:
             X = self.X_graph
+        if X is None:
+            return
         for i in range(X.shape[1]):
             self._unify_datatype(X[:, i])
 
     @staticmethod
-    def _unify_datatype(X):
+    def _unify_datatype(X: List[HashGraph]):
         if X[0].__class__ == list:
             graphs = []
             for x in X:
