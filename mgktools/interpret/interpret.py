@@ -136,7 +136,8 @@ def interpret_atoms(smiles_to_be_interpret: str,
     graph_hyperparameters = [json.load(open(mgk_hyperparameters_file))]
     kernel = GraphKernelConfig(N_MGK=1,
                                graph_hyperparameters=graph_hyperparameters).kernel
-    gpr = GPR(kernel=kernel, alpha=alpha, normalize_y=True).fit(graphs_train, targets_train)
+    # normalize_y must be false.
+    gpr = GPR(kernel=kernel, alpha=alpha, normalize_y=False).fit(graphs_train, targets_train)
     y_pred, y_std = gpr.predict([graph_to_be_interpret], return_std=True)
     y_nodes = gpr.predict(node_graphs)
     for i, atom in enumerate(mol.GetAtoms()):
