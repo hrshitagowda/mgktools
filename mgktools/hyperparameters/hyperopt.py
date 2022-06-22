@@ -43,6 +43,8 @@ def bayesian_optimization(save_dir: str,
                           ):
     if task_type == 'regression':
         assert model_type in ['gpr', 'gpr-sod', 'gpr-nystrom', 'gpr-nle', 'svr']
+    elif task_type == 'binary':
+        assert model_type in ['gpr', 'gpc', 'svc']
     else:
         assert model_type in ['gpc', 'svc']
 
