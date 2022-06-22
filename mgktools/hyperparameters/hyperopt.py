@@ -78,7 +78,10 @@ def bayesian_optimization(save_dir: str,
         result = evaluator.evaluate()
         results.append(result)
         dataset.graph_kernel_type = 'graph'
-        return result
+        if metric in ['rmse', 'mae', 'mse', 'max']:
+            return result
+        else:
+            return -result
 
     SPACE = kernel_config.get_space()
 
