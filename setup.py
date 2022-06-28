@@ -24,7 +24,7 @@ setuptools.setup(
     version=__version__,
     python_requires='>=3.8',
     install_requires=[
-        'scikit-learn>=0.24.1',
+        'scikit-learn==0.24.1',
         'tqdm>=4.62.0',
         'hyperopt>=0.2.5',
         'scipy==1.6.2',
