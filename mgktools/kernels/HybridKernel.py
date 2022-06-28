@@ -3,6 +3,7 @@
 from typing import Dict, Iterator, List, Optional, Union, Literal, Tuple
 import copy
 import numpy as np
+from sklearn.gaussian_process.kernels import RBF
 
 
 class HybridKernel:
@@ -22,6 +23,9 @@ class HybridKernel:
 
         X = self._format_X(X)
         X_list = list(map(f, self.composition))
+        for i, kernel in enumerate(self.kernel_list):
+            if kernel.__class__ == RBF:
+                X_list[i] = X_list[i].astype('float32')
         return X_list
 
     @staticmethod

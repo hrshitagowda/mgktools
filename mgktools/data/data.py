@@ -11,14 +11,12 @@ import pandas as pd
 import rdkit.Chem.AllChem as Chem
 from rxntools.reaction import ChemicalReaction
 from joblib import Parallel, delayed
-from sklearn.utils.fixes import _joblib_parallel_args
 from sklearn.preprocessing import StandardScaler
 import networkx as nx
 from graphdot.graph._from_networkx import _from_networkx
 from ..features_mol import get_features_generator, FeaturesGenerator
 from ..graph.hashgraph import HashGraph
 from .public import QM7, QM9
-
 
 # Cache of RDKit molecules
 CACHE_MOL = True
@@ -598,8 +596,7 @@ class Dataset:
         else:
             raise RuntimeError(f'Unknown public data set {args.data_public}')
         data = Parallel(
-            n_jobs=args.n_jobs, verbose=True,
-            **_joblib_parallel_args(prefer='processes'))(
+            n_jobs=args.n_jobs, verbose=True, prefer='processes')(
             delayed(cls.get_subDataset)(
                 [],
                 [],
@@ -635,8 +632,7 @@ class Dataset:
             n3 = len(reaction_columns)
             groups = df.groupby(pure_columns + mixture_columns + reaction_columns)
             data = Parallel(
-                n_jobs=n_jobs, verbose=True,
-                **_joblib_parallel_args(prefer='processes'))(
+                n_jobs=n_jobs, verbose=True, prefer='processes')(
                 delayed(cls.get_subDataset)(
                     (lambda x: [x] if x.__class__ == str else tolist(x))(g[0])[0:n1],
                     (lambda x: tolist([x]) if x.__class__ == str else tolist(x))(g[0])[n1:n1+n2],
@@ -650,8 +646,7 @@ class Dataset:
                 for g in groups)
         else:
             data = Parallel(
-                n_jobs=n_jobs, verbose=True,
-                **_joblib_parallel_args(prefer='processes'))(
+                n_jobs=n_jobs, verbose=True, prefer='processes')(
                 delayed(cls.get_subDataset)(
                     tolist(df.iloc[i].get(pure_columns)),
                     tolist(df.iloc[i].get(mixture_columns)),

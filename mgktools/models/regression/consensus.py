@@ -5,7 +5,6 @@ import numpy as np
 import copy
 import threading
 from joblib import Parallel, delayed
-from sklearn.utils.fixes import _joblib_parallel_args
 from ...models.regression.GPRgraphdot import GPR as GPRgraphdot
 from ...models.regression.GPRsklearn.gpr import GPR as GPRsklearn
 from .GPRgraphdot.gpr import predict_
@@ -67,8 +66,7 @@ class ConsensusRegressor:
 
     def fit(self, X, y):
         models = [copy.deepcopy(self.model) for i in range(self.n_estimators)]
-        models = Parallel(n_jobs=self.n_jobs, verbose=self.verbose,
-                          **_joblib_parallel_args(prefer='processes'))(
+        models = Parallel(n_jobs=self.n_jobs, verbose=self.verbose, prefer='processes')(
             delayed(_parallel_build_models)(
                 m, self, X, y, i, len(models), verbose=self.verbose)
             for i, m in enumerate(models))
@@ -90,8 +88,7 @@ class ConsensusRegressor:
         u_hat = []
         # Parallel loop
         lock = threading.Lock()
-        Parallel(n_jobs=self.n_jobs, verbose=self.verbose,
-                 **_joblib_parallel_args(require='sharedmem'))(
+        Parallel(n_jobs=self.n_jobs, verbose=self.verbose, require='sharedmem')(
             delayed(_accumulate_prediction)(m.predict, X, y_hat, u_hat, lock,
                                             return_std=return_std)
             for m in self.models)

@@ -4,7 +4,6 @@ import numpy as np
 from tqdm import tqdm
 import threading
 from joblib import Parallel, delayed
-from sklearn.utils.fixes import _joblib_parallel_args
 from graphdot.linalg.cholesky import CholSolver
 
 
@@ -116,8 +115,7 @@ class NaiveLocalExpertGP:
 
     def predict(self, Z, return_std=False):
         results = Parallel(
-            n_jobs=self.n_jobs, verbose=True,
-            **_joblib_parallel_args(prefer='processes'))(
+            n_jobs=self.n_jobs, verbose=True, prefer='processes')(
             delayed(self.predict_)(
                 z.reshape(1, -1),
                 return_std
