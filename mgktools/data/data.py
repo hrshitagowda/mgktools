@@ -14,7 +14,7 @@ from joblib import Parallel, delayed
 from sklearn.preprocessing import StandardScaler
 import networkx as nx
 from graphdot.graph._from_networkx import _from_networkx
-from ..features_mol import get_features_generator, FeaturesGenerator
+from ..features_mol import FeaturesGenerator
 from ..graph.hashgraph import HashGraph
 from .public import QM7, QM9
 
@@ -70,7 +70,7 @@ class MolecularGraph2D:
             return
         self.features_mol = []
         for fg in features_generator:
-            features_generator_ = get_features_generator(fg)
+            features_generator_ = FeaturesGenerator(features_generator_name=fg)
             self.features_mol.append(
                 self.calc_features_mol(self.mol, features_generator_))
         self.features_mol = np.concatenate(self.features_mol)
@@ -88,8 +88,7 @@ class MolecularGraph2D:
         elif mol is not None and mol.GetNumHeavyAtoms() == 0:
             # not all features_mol are equally long, so use methane as dummy
             # molecule to determine length
-            features_mol = np.zeros(
-                len(features_generator(Chem.MolFromSmiles('C'))))
+            features_mol = np.zeros(len(features_generator(Chem.MolFromSmiles('C'))))
         else:
             features_mol = None
         return np.asarray(features_mol)
