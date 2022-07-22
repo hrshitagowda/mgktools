@@ -7,12 +7,25 @@ from typing import Dict, Iterator, List, Optional, Union, Literal, Tuple
 from ..data import Dataset
 
 
-def get_features_hyperparameters(N_RBF: int,
-                                 features_hyperparameters=None,
-                                 features_hyperparameters_bounds=None,
-                                 features_hyperparameters_file: str = None,
-                                 single_features_hyperparameter: bool = False
-                                 ) -> Tuple[Optional[List[float]], Optional[List[Tuple[float, float]]]]:
+def get_features_hyperparameters(
+        N_RBF: int,
+        features_hyperparameters: List[float] = None,
+        features_hyperparameters_bounds: Union[List[Tuple[float, float]], Literal['fixed']] = None,
+        features_hyperparameters_file: str = None,
+) -> Tuple[Optional[List[float]], Optional[List[Tuple[float, float]]]]:
+    """
+
+    Parameters
+    ----------
+    N_RBF: dimension of RBF kernel
+    features_hyperparameters
+    features_hyperparameters_bounds
+    features_hyperparameters_file
+
+    Returns
+    -------
+
+    """
     if N_RBF == 0:
         sigma_RBF, sigma_RBF_bounds = None, None
     elif features_hyperparameters_file is not None:
@@ -23,24 +36,17 @@ def get_features_hyperparameters(N_RBF: int,
         sigma_RBF = features_hyperparameters
         sigma_RBF_bounds = features_hyperparameters_bounds
         if len(sigma_RBF) != 1 and len(sigma_RBF) != N_RBF:
-            raise RuntimeError(f'The number of features({N_RBF}) not equal to the number of hyperparameters'
-                               f'({len(sigma_RBF)})')
-        elif sigma_RBF_bounds != 'fixed' \
-                and len(sigma_RBF) == 1 \
-                and N_RBF != 1 \
-                and not single_features_hyperparameter:
-            sigma_RBF *= N_RBF
-            sigma_RBF_bounds *= N_RBF
+            raise ValueError(f'The number of features({N_RBF}) not equal to the number of hyperparameters'
+                             f'({len(sigma_RBF)})')
     return sigma_RBF, sigma_RBF_bounds
 
 
 def get_kernel_config(dataset: Dataset,
                       graph_kernel_type: Literal['graph', 'pre-computed', None],
                       # arguments for vectorized features.
-                      features_hyperparameters=None,
-                      features_hyperparameters_bounds=None,
+                      features_hyperparameters: List[float] = None,
+                      features_hyperparameters_bounds: List[Tuple[float]] = None,
                       features_hyperparameters_file: str = None,
-                      single_features_hyperparameter: bool = False,
                       # arguments for marginalized graph kernel
                       mgk_hyperparameters_files: List[str] = None,
                       # arguments for pre-computed kernel
@@ -54,7 +60,6 @@ def get_kernel_config(dataset: Dataset,
             features_hyperparameters,
             features_hyperparameters_bounds,
             features_hyperparameters_file,
-            single_features_hyperparameter
         )
         params = {
             'N_RBF': N_RBF,
@@ -75,7 +80,6 @@ def get_kernel_config(dataset: Dataset,
             features_hyperparameters,
             features_hyperparameters_bounds,
             features_hyperparameters_file,
-            single_features_hyperparameter
         )
 
         params = {
@@ -97,7 +101,6 @@ def get_kernel_config(dataset: Dataset,
             features_hyperparameters,
             features_hyperparameters_bounds,
             features_hyperparameters_file,
-            single_features_hyperparameter
         )
 
         if kernel_dict is None:
