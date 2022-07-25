@@ -188,30 +188,25 @@ class MultiMolecularGraph2D:
         return cls([MolecularGraph2D(s) for s in smiles], concentration,
                    graph_type)
 
-    def set_features_mol(self, features_generator: List[str] = None):
+    def set_features_mol(self, features_generator: List[str] = None,
+                         features_combination: Literal['concat', 'mean'] = None):
         if features_generator is None:
             self.features_mol = None
             return None
-
         if len(self.data) != 1:
-            """
             self.features_mol = []
             for i, d in enumerate(self.data):
                 d.set_features_mol(features_generator)
                 self.features_mol.append(d.features_mol * self.concentration[i])
-            self.features_mol = np.asarray(self.features_mol).mean(axis=0)
-            """
-            raise RuntimeError(
-                'Molecular features of mixtures are not supported.')
+            if features_combination == 'mean':
+                self.features_mol = np.asarray(self.features_mol).mean(axis=0).reshape(1, -1)
+            elif features_combination == 'concat':
+                self.features_mol = np.concatenate(self.features_mol).reshape(1, -1)
+            else:
+                raise ValueError(f'unknown feature combination: f{features_combination}')
         else:
             self.data[0].set_features_mol(features_generator)
             self.features_mol = self.data[0].features_mol.reshape(1, -1)
-
-    #def set_concentration(self, concentration: List[float] = None) -> None:
-    #    if concentration is None:
-    #        return
-    #    else:
-    #        self.concentration = concentration
 
 
 class Graph3D:
@@ -284,14 +279,16 @@ class CompositeDatapoint:
     def X_features_mol(self) -> np.ndarray:  # 2d array.
         return concatenate([d.features_mol for d in self.data], axis=1)
 
-    def set_features_mol(self, features_generator):
+    def set_features_mol(self, features_generator,
+                         features_combination: Literal['concat', 'mean'] = None):
         if features_generator is None:
             return
         assert len(self.data_3d) == 0
-        assert len(self.data_m) == 0
         assert len(self.data_cr) == 0
         for d in self.data_p:
-            d.set_features_mol(features_generator)
+            d.set_features_mol(features_generator, features_combination)
+        for d in self.data_m:
+            d.set_features_mol(features_generator, features_combination)
 
 
 class SubDataset:
@@ -363,8 +360,9 @@ class SubDataset:
             else:
                 return X.repeat(len(self), axis=0)
 
-    def set_features(self, features_generator: List[str] = None):
-        self.data.set_features_mol(features_generator)
+    def set_features(self, features_generator: List[str] = None,
+                     features_combination: Literal['concat', 'mean'] = None):
+        self.data.set_features_mol(features_generator, features_combination)
 
 
 class Dataset:
@@ -492,6 +490,7 @@ class Dataset:
 
     def copy(self):
         return copy.deepcopy(self)
+
     """
     def set_dataset_status(self, graph_kernel_type: Literal['graph', 'preCalc']):
         self.graph_kernel_type = graph_kernel_type
@@ -506,6 +505,7 @@ class Dataset:
     #    self.features_add_normalize = args.features_add_normalize
     #    self.normalize_features()
     """
+
     def set_ignore_features_add(self, ignore_features_add: bool) -> bool:
         self.ignore_features_add = ignore_features_add
         if self.data is not None:
@@ -569,6 +569,7 @@ class Dataset:
             targets: np.ndarray,
             features: Optional[np.ndarray] = None,
             features_generator: List[str] = None,
+            features_combination: Literal['concat', 'mean'] = None
     ) -> SubDataset:
         data_p = []
         data_m = []
@@ -583,8 +584,9 @@ class Dataset:
         for rg in reaction:
             data_r.append(ReactionGraph2D(rg, reaction_type))
         data = SubDataset(CompositeDatapoint(data_p, data_m, data_r, data_3d), targets, features)
-        data.set_features(features_generator)
+        data.set_features(features_generator, features_combination)
         return data
+
     """
     @classmethod
     def from_public(cls, args: CommonArgs):
@@ -610,6 +612,7 @@ class Dataset:
             for i in qm_data.index)
         return cls(data)
     """
+
     @classmethod
     def from_df(cls, df: pd.DataFrame,
                 pure_columns: List[str] = None,
@@ -618,6 +621,7 @@ class Dataset:
                 feature_columns: List[str] = None,
                 target_columns: List[str] = None,
                 features_generator: List[str] = None,
+                features_combination: Literal['concat', 'mean'] = None,
                 mixture_type: Literal['single_graph', 'multi_graph'] = 'single_graph',
                 reaction_type: Literal['reaction', 'agent', 'reaction+agent'] = 'reaction',
                 group_reading: bool = False,
@@ -634,13 +638,14 @@ class Dataset:
                 n_jobs=n_jobs, verbose=True, prefer='processes')(
                 delayed(cls.get_subDataset)(
                     (lambda x: [x] if x.__class__ == str else tolist(x))(g[0])[0:n1],
-                    (lambda x: tolist([x]) if x.__class__ == str else tolist(x))(g[0])[n1:n1+n2],
+                    (lambda x: tolist([x]) if x.__class__ == str else tolist(x))(g[0])[n1:n1 + n2],
                     mixture_type,
-                    (lambda x: [x] if x.__class__ == str else tolist(x))(g[0])[n1+n2:n1+n2+n3],
+                    (lambda x: [x] if x.__class__ == str else tolist(x))(g[0])[n1 + n2:n1 + n2 + n3],
                     reaction_type,
                     to_numpy(g[1][target_columns]),
                     to_numpy(g[1][feature_columns]),
-                    features_generator
+                    features_generator,
+                    features_combination
                 )
                 for g in groups)
         else:
@@ -652,9 +657,10 @@ class Dataset:
                     mixture_type,
                     tolist(df.iloc[i].get(reaction_columns)),
                     reaction_type,
-                    to_numpy(df.iloc[i:i+1][target_columns]),
-                    to_numpy(df.iloc[i:i+1].get(feature_columns)),
+                    to_numpy(df.iloc[i:i + 1][target_columns]),
+                    to_numpy(df.iloc[i:i + 1].get(feature_columns)),
                     features_generator,
+                    features_combination
                 )
                 for i in df.index)
         return cls(data)
@@ -666,8 +672,6 @@ def tolist(list_: Union[pd.Series, List]) -> List[str]:
     else:
         result = []
         for string_ in list_:
-            # print(1)
-            # print(string_)
             if ',' in string_:
                 result.append(json.loads(string_))
             else:
