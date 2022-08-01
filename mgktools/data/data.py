@@ -526,6 +526,8 @@ class Dataset:
     def unify_datatype(self, X=None):
         if X is None:
             X = self.X_graph
+        else:
+            X = np.concatenate([X, self.X_graph], axis=0)
         if X is None:
             return
         for i in range(X.shape[1]):
