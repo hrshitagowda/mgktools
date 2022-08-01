@@ -123,7 +123,7 @@ def scaffold_split(dataset: Dataset,
     return [dataset_train, dataset_test]
 
 
-def dataset_split(dataset, split_type: Literal['random', 'scaffold_balanced', 'n_heavy'] = 'random',
+def dataset_split(dataset, split_type: Literal['random', 'scaffold_balanced', 'n_heavy'] = None,
                   sizes: Tuple[float, float] = (0.8, 0.2), n_heavy: int = 15,
                   seed: int = 0) -> List:
     """ Split the data set into two data sets: training set and test set.

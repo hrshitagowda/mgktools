@@ -100,28 +100,29 @@ class Evaluator:
             train_metrics_results[metric] = []
             test_metrics_results[metric] = []
 
-        if self.split_type == 'assigned':
+        if self.split_type is None:
             assert external_test_dataset is not None
             dataset_train = self.dataset
             dataset_test = external_test_dataset
             train_metrics, test_metrics = self.evaluate_train_test(dataset_train, dataset_test,
                                                                    train_log='train.log',
                                                                    test_log='test.log')
-        for i in range(self.num_folds):
-            # data splits
-            dataset_train, dataset_test = dataset_split(
-                self.dataset,
-                split_type=self.split_type,
-                sizes=self.split_sizes,
-                seed=self.seed + i)
-            train_metrics, test_metrics = self.evaluate_train_test(dataset_train, dataset_test,
-                                                                   train_log='train_%d.log' % i,
-                                                                   test_log='test_%d.log' % i)
-            for j, metric in enumerate(self.metrics):
-                if train_metrics is not None:
-                    train_metrics_results[metric].append(train_metrics[j])
-                if test_metrics is not None:
-                    test_metrics_results[metric].append(test_metrics[j])
+        else:
+            for i in range(self.num_folds):
+                # data splits
+                dataset_train, dataset_test = dataset_split(
+                    self.dataset,
+                    split_type=self.split_type,
+                    sizes=self.split_sizes,
+                    seed=self.seed + i)
+                train_metrics, test_metrics = self.evaluate_train_test(dataset_train, dataset_test,
+                                                                       train_log='train_%d.log' % i,
+                                                                       test_log='test_%d.log' % i)
+        for j, metric in enumerate(self.metrics):
+            if train_metrics is not None:
+                train_metrics_results[metric].append(train_metrics[j])
+            if test_metrics is not None:
+                test_metrics_results[metric].append(test_metrics[j])
         if self.evaluate_train:
             self._log('\nTraining set:')
             for metric, result in train_metrics_results.items():
@@ -160,7 +161,6 @@ class Evaluator:
 
         return_std = self.return_std
         proba = self.return_proba
-
         # save results test_*.log
         test_metrics = self._eval(X_test, y_test, repr_test, y_similar,
                                   logfile=None if test_log is None else '%s/%s' % (self.save_dir, test_log),
