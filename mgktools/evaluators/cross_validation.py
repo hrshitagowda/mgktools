@@ -107,6 +107,11 @@ class Evaluator:
             train_metrics, test_metrics = self.evaluate_train_test(dataset_train, dataset_test,
                                                                    train_log='train.log',
                                                                    test_log='test.log')
+            for j, metric in enumerate(self.metrics):
+                if train_metrics is not None:
+                    train_metrics_results[metric].append(train_metrics[j])
+                if test_metrics is not None:
+                    test_metrics_results[metric].append(test_metrics[j])
         else:
             for i in range(self.num_folds):
                 # data splits
@@ -118,11 +123,11 @@ class Evaluator:
                 train_metrics, test_metrics = self.evaluate_train_test(dataset_train, dataset_test,
                                                                        train_log='train_%d.log' % i,
                                                                        test_log='test_%d.log' % i)
-        for j, metric in enumerate(self.metrics):
-            if train_metrics is not None:
-                train_metrics_results[metric].append(train_metrics[j])
-            if test_metrics is not None:
-                test_metrics_results[metric].append(test_metrics[j])
+                for j, metric in enumerate(self.metrics):
+                    if train_metrics is not None:
+                        train_metrics_results[metric].append(train_metrics[j])
+                    if test_metrics is not None:
+                        test_metrics_results[metric].append(test_metrics[j])
         if self.evaluate_train:
             self._log('\nTraining set:')
             for metric, result in train_metrics_results.items():

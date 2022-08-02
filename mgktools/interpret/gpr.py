@@ -5,6 +5,10 @@ from graphdot.model.gaussian_process import GaussianProcessRegressor
 
 
 class InterpretableGaussianProcessRegressor(GaussianProcessRegressor):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        assert self.normalize_y == False
+
     def predict_interpretable(self, Z):
         if not hasattr(self, 'Kinv'):
             raise RuntimeError('Model not trained.')

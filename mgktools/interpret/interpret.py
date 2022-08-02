@@ -88,7 +88,7 @@ def interpret_training_mols(smiles_to_be_interpret: str,
         mgk_hyperparameters_files=[mgk_hyperparameters_file],
     )
     kernel = kernel_config.kernel
-    gpr = GPR(kernel=kernel, alpha=alpha, normalize_y=True).fit(train.X, train.y)
+    gpr = GPR(kernel=kernel, alpha=alpha, normalize_y=False).fit(train.X, train.y)
     y_pred, y_std = gpr.predict(test.X, return_std=True)
     c_percentage, c_y = gpr.predict_interpretable(test.X)
     if output_order == 'sort_by_value':
@@ -202,12 +202,15 @@ def get_interpreted_mols(smiles_train: List[str],
     graph_hyperparameters = [json.load(open(mgk_hyperparameters_file))]
     kernel = GraphKernelConfig(N_MGK=1,
                                graph_hyperparameters=graph_hyperparameters).kernel
-    gpr = GPR(kernel=kernel, alpha=alpha, normalize_y=True).fit(graphs, targets_train)
+    gpr = GPR(kernel=kernel, alpha=alpha, normalize_y=False).fit(graphs, targets_train)
     mols_to_be_interpret = [Chem.MolFromSmiles(s) for s in smiles_to_be_interpret]
+    graphs_to_be_interpret = [HashGraph.from_rdkit(mol) for mol in mols_to_be_interpret]
+    HashGraph.unify_datatype(graphs + graphs_to_be_interpret, inplace=True)
+    y_pred, y_std = gpr.predict(graphs_to_be_interpret, return_std=True)
     for mol in tqdm(mols_to_be_interpret, total=len(mols_to_be_interpret)):
         node_graphs = get_node_graphs(mol)
         HashGraph.unify_datatype(graphs + node_graphs, inplace=True)
         y_nodes = gpr.predict(node_graphs)
         for i, atom in enumerate(mol.GetAtoms()):
             atom.SetProp('atomNote', '%.3f' % y_nodes[i])
-    return mols_to_be_interpret
+    return y_pred, y_std, mols_to_be_interpret
