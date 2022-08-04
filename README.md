@@ -2,11 +2,18 @@
 Python Package using marginalized graph kernel (MGK) to predict molecular properties.
 
 ## Installation
+Suggested Package Versions:
+
+Python(3.10)
+
+GCC(11.2)
+
+CUDA(11.7).
 ```
 conda install rdkit -c conda-forge
 pip install git+https://github.com/bp-kelley/descriptastorus
 pip install git+https://gitlab.com/XiangyanSJTU/graphdot.git@feature/start_probability
-pip install -e .
+pip install mgktools==0.0.0
 ```
 
 ## Usage
