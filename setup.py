@@ -28,9 +28,9 @@ setuptools.setup(
         'tqdm>=4.62.0',
         'hyperopt>=0.2.5',
         'scipy>=1.6.2',
-        'mendeleev==0.6.1',
+        'mendeleev>=0.7',
         'rxntools>=0.0.2',
-        'pycuda==2020.1',
+        'pycuda>=2022.1',
     ],
     author='Yan Xiang',
     author_email='1993.xiangyan@gmail.com',
@@ -42,5 +42,14 @@ setuptools.setup(
         'Programming Language :: Python',
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
-    ]
+    ],
+    include_package_data=True,
+    data_files=[('hyperparameters', ['mgktools/hyperparameters/additive.json',
+                                     'mgktools/hyperparameters/additive-msnorm.json',
+                                     'mgktools/hyperparameters/additive-norm.json',
+                                     'mgktools/hyperparameters/additive-pnorm.json',
+                                     'mgktools/hyperparameters/product.json',
+                                     'mgktools/hyperparameters/product-msnorm.json',
+                                     'mgktools/hyperparameters/product-norm.json',
+                                     'mgktools/hyperparameters/product-pnorm.json'])]
 )

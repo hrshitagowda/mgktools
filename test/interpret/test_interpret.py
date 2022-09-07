@@ -26,8 +26,7 @@ def test_interpret_training_mols(testset):
         output_order='sort_by_value',
         mgk_hyperparameters_file=mgk_hyperparameters_file,
         n_jobs=6)
-    assert abs(df_interpret['contribution_value'].sum() - y_pred) < 0.000000001
-    assert df_interpret['contribution_value'].sum() == pytest.approx(y_pred, 0.000000001)
+    assert df_interpret['contribution_value'].sum() == pytest.approx(y_pred, 1e-5)
 
 @pytest.mark.parametrize('testset', [
     (additive_pnorm),
@@ -44,25 +43,27 @@ def test_interpret_atoms(testset):
     y_sum = 0.
     for atom in mol.GetAtoms():
         y_sum += float(atom.GetProp('atomNote'))
-    assert abs(y_sum - y_pred) < 0.003
-    assert y_sum == pytest.approx(y_pred, 0.003)
+    assert y_sum == pytest.approx(y_pred, 1e-5)
 
 
 @pytest.mark.parametrize('testset', [
     (additive_pnorm),
     (product_pnorm),
 ])
-def test_get_interpreted_mols(testset):
+@pytest.mark.parametrize('batch_size', [(1), (2), (3)])
+def test_get_interpreted_mols(testset, batch_size):
     mgk_hyperparameters_file = testset
-    smiles_to_be_interpret = ['Cc1cc(cc(c1)O)C', 'CC(C)C(C)C']
+    batch_size = batch_size
+    smiles_to_be_interpret = ['Cc1cc(cc(c1)O)C', 'CC(C)C(C)C', 'CCCO', 'C1CCCC1CCO']
     y_pred, y_std, mols = get_interpreted_mols(smiles_train=pure,
                                                targets_train=targets,
                                                smiles_to_be_interpret=smiles_to_be_interpret,
                                                mgk_hyperparameters_file=mgk_hyperparameters_file,
-                                               alpha=0.01)
+                                               alpha=0.01,
+                                               return_mols_only=False,
+                                               batch_size=batch_size)
     for i, mol in enumerate(mols):
         y_sum = 0.
         for atom in mol.GetAtoms():
             y_sum += float(atom.GetProp('atomNote'))
-        assert abs(y_sum - y_pred[i]) < 0.003
-        assert y_sum == pytest.approx(y_pred[i], 0.003)
+        assert y_sum == pytest.approx(y_pred[i], 1e-5)
