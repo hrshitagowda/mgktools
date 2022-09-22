@@ -47,7 +47,7 @@ class HybridKernel:
                 Yi = Y_list[i] if Y is not None else None
                 output = kernel(Xi, Y=Yi, eval_gradient=True)
                 if self.hybrid_rule == 'product':
-                    covariance_matrix *= output[0]
+                    covariance_matrix *= np.asarray(output[0], dtype=np.float64)
                     for j in range(self.nkernel):
                         if j == i:
                             gradient_matrix_list[j] = gradient_matrix_list[j] * output[1]
@@ -59,7 +59,7 @@ class HybridKernel:
                 if i != 0:
                     gradient_matrix = np.c_[
                         gradient_matrix, gradient_matrix_list[i]]
-            return covariance_matrix, gradient_matrix
+            return covariance_matrix, np.asarray(gradient_matrix, dtype=np.float64)
         else:
             covariance_matrix = 1.
             for i, kernel in enumerate(self.kernel_list):
@@ -79,7 +79,7 @@ class HybridKernel:
         if self.hybrid_rule == 'product':
             return np.product(diag_list, axis=0)
         else:
-            raise Exception('Unknown combined rule %s' % self.hybrid_rule)
+            raise Exception('Unknown hybrid rule %s' % self.hybrid_rule)
 
     def is_stationary(self):
         return False
@@ -121,7 +121,7 @@ class HybridKernel:
         for i, kernel in enumerate(self.kernel_list):
             if i == 0:
                 bounds = self.kernel_list[0].bounds
-            else:
+            elif kernel.bounds.shape != (0,):
                 bounds = np.r_[bounds, kernel.bounds]
         return bounds
 
@@ -134,7 +134,7 @@ class HybridKernel:
         return dict(
             kernel_list=self.kernel_list,
             composition=self.composition,
-            combined_rule=self.hybrid_rule,
+            hybrid_rule=self.hybrid_rule,
         )
 
     def load(self, result_dir):

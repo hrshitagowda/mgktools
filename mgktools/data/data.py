@@ -140,7 +140,7 @@ class MultiMolecularGraph2D:
         self.features_mol = None
         # set concentration
         if concentration is None:
-            self.concentration = [1.0] * len(data)
+            self.concentration = [1.0 / len(data)] * len(data)
         else:
             self.concentration = concentration
         graphs = [d.graph for d in self.data]
@@ -191,15 +191,14 @@ class MultiMolecularGraph2D:
     def set_features_mol(self, features_generator: List[str] = None,
                          features_combination: Literal['concat', 'mean'] = None):
         if features_generator is None:
-            self.features_mol = None
-            return None
+            return
         if len(self.data) != 1:
             self.features_mol = []
             for i, d in enumerate(self.data):
                 d.set_features_mol(features_generator)
                 self.features_mol.append(d.features_mol * self.concentration[i])
             if features_combination == 'mean':
-                self.features_mol = np.asarray(self.features_mol).mean(axis=0).reshape(1, -1)
+                self.features_mol = np.mean(self.features_mol, axis=0).reshape(1, -1)
             elif features_combination == 'concat':
                 self.features_mol = np.concatenate(self.features_mol).reshape(1, -1)
             else:
@@ -248,7 +247,7 @@ class CompositeDatapoint:
         assert len(self.data_m) == 0
         assert len(self.data_cr) == 0
         assert len(self.data_3d) == 0
-        return self.data_p[0].mol
+        return self.data_p[0].mols[0]
 
     @property
     def n_heavy(self) -> int:
@@ -492,21 +491,6 @@ class Dataset:
     def copy(self):
         return copy.deepcopy(self)
 
-    """
-    def set_dataset_status(self, graph_kernel_type: Literal['graph', 'preCalc']):
-        self.graph_kernel_type = graph_kernel_type
-        
-    #def update_args(self, args: KernelArgs):
-    #    if args.ignore_features_add:
-    #        self.set_ignore_features_add(True)
-    #    else:
-    #        self.set_ignore_features_add(False)
-    #    self.graph_kernel_type = args.graph_kernel_type
-    #    self.features_mol_normalize = args.features_mol_normalize
-    #    self.features_add_normalize = args.features_add_normalize
-    #    self.normalize_features()
-    """
-
     def set_ignore_features_add(self, ignore_features_add: bool) -> bool:
         self.ignore_features_add = ignore_features_add
         if self.data is not None:
@@ -514,11 +498,13 @@ class Dataset:
                 d.ignore_features_add = ignore_features_add
         return ignore_features_add
 
-    def normalize_features(self):
+    def normalize_features_mol(self):
         if self.X_raw_features_mol is not None:
             self.features_mol_scaler = StandardScaler().fit(self.X_raw_features_mol)
         else:
             self.features_mol_scaler = None
+
+    def normalize_features_add(self):
         if self.X_raw_features_add is not None:
             self.features_add_scaler = StandardScaler().fit(self.X_raw_features_add)
         else:
@@ -543,6 +529,11 @@ class Dataset:
             HashGraph.unify_datatype(graphs, inplace=True)
         else:
             HashGraph.unify_datatype(X, inplace=True)
+
+    def clear_cookie(self):
+        for X in self.X_graph:
+            for g in X:
+                g.cookie.clear()
 
     def save(self, path, filename='dataset.pkl', overwrite=False):
         f_dataset = os.path.join(path, filename)

@@ -53,14 +53,15 @@ def test_graph_features(mgk_file, features_generator, features_kernel, normalize
                               target_columns=['targets'],
                               features_generator=features_generator)
     if normalize_feature:
-        dataset.normalize_features()
+        dataset.normalize_features_mol()
     dataset.graph_kernel_type = 'graph'
     N = len(dataset)
     kernel_config = get_kernel_config(dataset=dataset,
                                       graph_kernel_type='graph',
                                       mgk_hyperparameters_files=[mgk_file],
                                       features_kernel_type=features_kernel,
-                                      rbf_length_scale=None if features_kernel == 'dot_product' else [0.5])
+                                      features_hyperparameters=[0.5],
+                                      features_hyperparameters_bounds='fixed')
     print(kernel_config.kernel.composition)
     K = kernel_config.kernel(dataset.X)
     assert K.shape == (N, N)

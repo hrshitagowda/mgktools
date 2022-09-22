@@ -278,9 +278,9 @@ class GraphKernelConfig(FeatureKernelConfig):
                  unique: bool = False,
                  features_kernel_type: Literal['dot_product', 'rbf'] = None,
                  n_features: int = 0,
-                 rbf_length_scale: List[float] = None,
-                 rbf_length_scale_bounds: List[Tuple[float]] = None, ):
-        super().__init__(features_kernel_type, n_features, rbf_length_scale, rbf_length_scale_bounds)
+                 features_hyperparameters: List[float] = None,
+                 features_hyperparameters_bounds: List[Tuple[float]] = None, ):
+        super().__init__(features_kernel_type, n_features, features_hyperparameters, features_hyperparameters_bounds)
         self.graph_hyperparameters = graph_hyperparameters
         self.N_MGK = N_MGK
         self.N_conv_MGK = N_conv_MGK
@@ -415,9 +415,9 @@ class GraphKernelConfig(FeatureKernelConfig):
         for key, value in hyperdict.items():
             n, term, microterm = key.split(':')
             # RBF kernels
-            if n == 'RBF':
+            if n == 'features_kernel':
                 n_features = int(term)
-                self.rbf_length_scale[n_features] = value
+                self.features_hyperparameters[n_features] = value
             else:
                 n = int(n)
                 if term in ['Normalization', 'q', 'a_type', 'b_type']:
@@ -435,10 +435,10 @@ class GraphKernelConfig(FeatureKernelConfig):
                 else:
                     hyperdict[key[0]][key[1]][0] = hyperparameters.pop(0)
 
-        if self.n_features == 0 or self.rbf_length_scale_bounds == 'fixed':
+        if self.n_features == 0 or self.features_hyperparameters_bounds == 'fixed':
             assert len(hyperparameters) == 0
         else:
-            assert len(hyperparameters) == len(self.rbf_length_scale)
+            assert len(hyperparameters) == len(self.features_hyperparameters)
             self.rbf_length_scale = hyperparameters
 
     @staticmethod
@@ -476,10 +476,10 @@ class GraphKernelConfig(FeatureKernelConfig):
         N_MGK = self.N_MGK
         N_conv_MGK = self.N_conv_MGK
         n_features = self.n_features
-        if N_MGK == 1 and N_conv_MGK == 0 and self.features_kernel_type is None:
+        if N_MGK == 1 and N_conv_MGK == 0 and n_features == 0:
             self.kernel = self._get_single_graph_kernel(
                 self.graph_hyperparameters[0])
-        elif N_MGK == 0 and N_conv_MGK == 1 and self.features_kernel_type is None:
+        elif N_MGK == 0 and N_conv_MGK == 1 and n_features == 0:
             self.kernel = self._get_conv_graph_kernel(
                 self.graph_hyperparameters[0])
         else:
@@ -507,7 +507,7 @@ class GraphKernelConfig(FeatureKernelConfig):
     def get_precomputed_kernel_config(self, dataset: Dataset):
         dataset.set_ignore_features_add(True)
         n_features = self.n_features
-        self.n_features = 0
+        self.n_features = dataset.N_features_mol
         self._update_kernel()
         kernel_dict = self.get_kernel_dict(dataset.X_mol, dataset.X_repr.ravel())
         dataset.set_ignore_features_add(False)
