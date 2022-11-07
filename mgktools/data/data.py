@@ -243,11 +243,13 @@ class CompositeDatapoint:
 
     @property
     def mol(self) -> Chem.Mol:
-        assert len(self.data_p) == 1
         assert len(self.data_m) == 0
         assert len(self.data_cr) == 0
         assert len(self.data_3d) == 0
-        return self.data_p[0].mols[0]
+        if len(self.data_p) == 1:
+            return self.data_p[0].mols[0]
+        else:
+            return None
 
     @property
     def n_heavy(self) -> int:
@@ -445,7 +447,7 @@ class Dataset:
     @property
     def X_features_add(self) -> np.ndarray:
         features_add = self.X_raw_features_add
-        if self.features_add_scaler is not None:
+        if self.features_add_scaler is not None and features_add is not None:
             features_add = self.features_add_scaler.transform(features_add)
         return features_add
 
@@ -531,9 +533,10 @@ class Dataset:
             HashGraph.unify_datatype(X, inplace=True)
 
     def clear_cookie(self):
-        for X in self.X_graph:
-            for g in X:
-                g.cookie.clear()
+        if self.X_graph is not None:
+            for X in self.X_graph:
+                for g in X:
+                    g.cookie.clear()
 
     def save(self, path, filename='dataset.pkl', overwrite=False):
         f_dataset = os.path.join(path, filename)

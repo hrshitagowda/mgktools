@@ -11,8 +11,12 @@ from ..evaluators.cross_validation import Evaluator, Metric
 def save_best_params(save_dir: str,
                      results: List[float],
                      hyperdicts: List[Dict],
-                     kernel_config):
-    best_idx = np.where(results == np.min(results))[0][0]
+                     kernel_config,
+                     maximize: bool):
+    if maximize:
+        best_idx = np.where(results == np.max(results))[0][0]
+    else:
+        best_idx = np.where(results == np.min(results))[0][0]
     best = hyperdicts[best_idx].copy()
     #
     if save_dir is not None:
@@ -49,6 +53,11 @@ def bayesian_optimization(save_dir: Optional[str],
     else:
         assert model_type in ['gpc', 'svc']
 
+    if metric in ['rmse', 'mae', 'mse', 'max']:
+        maximize = False
+    else:
+        maximize = True
+
     hyperdicts = []
     results = []
 
@@ -65,7 +74,6 @@ def bayesian_optimization(save_dir: Optional[str],
                               kernel=kernel,
                               alpha=alpha_)
             for dataset in datasets:
-                dataset.graph_kernel_type = 'graph'
                 obj.append(model.log_marginal_likelihood(X=dataset.X, y=dataset.y))
                 dataset.clear_cookie()
             result = np.mean(obj)
@@ -73,33 +81,54 @@ def bayesian_optimization(save_dir: Optional[str],
             return result
         else:
             for dataset in datasets:
-                kernel = kernel_config.get_precomputed_kernel_config(dataset).kernel
-                model = set_model(model_type=model_type,
-                                  kernel=kernel,
-                                  alpha=alpha_,
-                                  C=C_)
-                dataset.graph_kernel_type = 'pre-computed'
-                evaluator = Evaluator(save_dir=save_dir,
-                                      dataset=dataset,
-                                      model=model,
-                                      task_type=task_type,
-                                      metrics=[metric],
-                                      split_type=split_type,
-                                      split_sizes=(0.8, 0.2),
-                                      num_folds=1 if split_type == 'loocv' else 10,
-                                      return_std=True if task_type == 'regression' else False,
-                                      return_proba=False if task_type == 'regression' or model_type == 'gpr' else True,
-                                      n_similar=None,
-                                      verbose=False)
-                obj.append(evaluator.evaluate())
-                dataset.graph_kernel_type = 'graph'
-                dataset.clear_cookie()
+                if dataset.graph_kernel_type == 'graph':
+                    kernel = kernel_config.get_precomputed_kernel_config(dataset).kernel
+                    model = set_model(model_type=model_type,
+                                      kernel=kernel,
+                                      alpha=alpha_,
+                                      C=C_)
+                    dataset.graph_kernel_type = 'pre-computed'
+                    evaluator = Evaluator(save_dir=save_dir,
+                                          dataset=dataset,
+                                          model=model,
+                                          task_type=task_type,
+                                          metrics=[metric],
+                                          split_type=split_type,
+                                          split_sizes=[0.8, 0.2],
+                                          num_folds=1 if split_type == 'loocv' else 10,
+                                          return_std=True if task_type == 'regression' else False,
+                                          return_proba=False if task_type == 'regression' or model_type == 'gpr' else True,
+                                          n_similar=None,
+                                          verbose=False)
+                    obj.append(evaluator.evaluate())
+                    dataset.graph_kernel_type = 'graph'
+                    dataset.clear_cookie()
+                else:
+                    kernel = kernel_config.kernel
+                    model = set_model(model_type=model_type,
+                                      kernel=kernel,
+                                      alpha=alpha_,
+                                      C=C_)
+                    evaluator = Evaluator(save_dir=save_dir,
+                                          dataset=dataset,
+                                          model=model,
+                                          task_type=task_type,
+                                          metrics=[metric],
+                                          split_type=split_type,
+                                          split_sizes=[0.8, 0.2],
+                                          num_folds=1 if split_type == 'loocv' else 10,
+                                          return_std=True if task_type == 'regression' else False,
+                                          return_proba=False if task_type == 'regression' or model_type == 'gpr' else True,
+                                          n_similar=None,
+                                          verbose=False)
+                    obj.append(evaluator.evaluate())
             result = np.mean(obj)
-            results.append(result)
-            if metric in ['rmse', 'mae', 'mse', 'max']:
-                return result
-            else:
+            if maximize:
+                results.append(-result)
                 return -result
+            else:
+                results.append(result)
+                return result
 
     SPACE = kernel_config.get_space()
 
@@ -131,9 +160,12 @@ def bayesian_optimization(save_dir: Optional[str],
 
     fmin(objective, SPACE, algo=tpe.suggest, max_evals=num_iters,
          rstate=np.random.seed(seed))
+    if maximize:
+        results = [-r for r in results]
     best_hyperdict = save_best_params(save_dir=save_dir,
                                       results=results,
                                       hyperdicts=hyperdicts,
-                                      kernel_config=kernel_config)
+                                      kernel_config=kernel_config,
+                                      maximize=maximize)
 
     return best_hyperdict, results, hyperdicts
