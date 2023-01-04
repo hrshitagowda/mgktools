@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from typing import Dict, Iterator, List, Optional, Union, Literal, Tuple
+from typing import Dict, Iterator, List, Optional, Union, Literal, Tuple, Callable
 import copy
 import ase
 import os
@@ -64,7 +64,7 @@ class MolecularGraph2D:
             SMILES_TO_MOL[self.smiles] = mol
             return mol
 
-    def set_features_mol(self, features_generator: List[str]):
+    def set_features_mol(self, features_generator: List[Union[str, Callable]]):
         if features_generator is None:
             self.features_mol = None
             return
@@ -188,7 +188,7 @@ class MultiMolecularGraph2D:
         return cls([MolecularGraph2D(s) for s in smiles], concentration,
                    graph_type)
 
-    def set_features_mol(self, features_generator: List[str] = None,
+    def set_features_mol(self, features_generator: List[Union[str, Callable]] = None,
                          features_combination: Literal['concat', 'mean'] = None):
         if features_generator is None:
             return
@@ -280,7 +280,7 @@ class CompositeDatapoint:
     def X_features_mol(self) -> np.ndarray:  # 2d array.
         return concatenate([d.features_mol for d in self.data], axis=1)
 
-    def set_features_mol(self, features_generator,
+    def set_features_mol(self, features_generator: List[Union[str, Callable]] = None,
                          features_combination: Literal['concat', 'mean'] = None):
         if features_generator is None:
             return
@@ -361,7 +361,7 @@ class SubDataset:
             else:
                 return X.repeat(len(self), axis=0)
 
-    def set_features(self, features_generator: List[str] = None,
+    def set_features(self, features_generator: List[Union[str, Callable]] = None,
                      features_combination: Literal['concat', 'mean'] = None):
         self.data.set_features_mol(features_generator, features_combination)
 
@@ -565,7 +565,7 @@ class Dataset:
             reaction_type: Literal['reaction', 'agent', 'reaction+agent'],
             targets: np.ndarray,
             features: Optional[np.ndarray] = None,
-            features_generator: List[str] = None,
+            features_generator: List[Union[str, Callable]] = None,
             features_combination: Literal['concat', 'mean'] = None
     ) -> SubDataset:
         data_p = []
@@ -617,7 +617,7 @@ class Dataset:
                 reaction_columns: List[str] = None,
                 feature_columns: List[str] = None,
                 target_columns: List[str] = None,
-                features_generator: List[str] = None,
+                features_generator: List[Union[str, Callable]] = None,
                 features_combination: Literal['concat', 'mean'] = None,
                 mixture_type: Literal['single_graph', 'multi_graph'] = 'single_graph',
                 reaction_type: Literal['reaction', 'agent', 'reaction+agent'] = 'reaction',
