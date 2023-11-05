@@ -12,8 +12,37 @@ from mgktools.evaluators.cross_validation import Evaluator
 
 
 pure = ['CCCC', 'CCCCCO', 'c1ccccc1', 'CCNCCO', 'CCCCN', 'NCCCCCO', 'c1ccccc1N', 'NCCNCCO']
-targets = [3.1, 14.5, 25.6, 56.7, 9.1, 17.5, 22.6, 36.7]
-df = pd.DataFrame({'pure': pure, 'targets': targets})
+targets_regression = [3.1, 14.5, 25.6, 56.7, 9.1, 17.5, 22.6, 36.7]
+df_regression = pd.DataFrame({'pure': pure, 'targets': targets_regression})
+targets_classification = [1, 1, 0, 1, 1, 0, 0, 1]
+df_classification = pd.DataFrame({'pure': pure, 'targets': targets_classification})
+
+
+@pytest.mark.parametrize('mgk_file', [additive_norm, additive_pnorm, additive_msnorm,
+                                      product_norm, product_pnorm, product_msnorm])
+@pytest.mark.parametrize('model', ['gpc', 'svc'])
+@pytest.mark.parametrize('split_type', ['random', 'scaffold_order', 'scaffold_random'])
+def test_only_graph(mgk_file, model, split_type):
+    dataset = Dataset.from_df(df=df_classification,
+                              pure_columns=['pure'],
+                              target_columns=['targets'])
+    dataset.graph_kernel_type = 'graph'
+    kernel_config = get_kernel_config(dataset=dataset,
+                                      graph_kernel_type='graph',
+                                      mgk_hyperparameters_files=[mgk_file])
+    C = 1.0 if model == 'svc' else None
+    model = set_model(model, kernel=kernel_config.kernel, C=C)
+    Evaluator(save_dir='tmp',
+              dataset=dataset,
+              model=model,
+              task_type='binary',
+              metrics=['roc-auc', 'mcc'],
+              split_type=split_type,
+              split_sizes=[0.75, 0.25],
+              num_folds=2,
+              return_std=False,
+              verbose=True).evaluate()
+    shutil.rmtree('tmp')
 
 
 @pytest.mark.parametrize('mgk_file', [additive_norm, additive_pnorm, additive_msnorm,
@@ -27,7 +56,7 @@ df = pd.DataFrame({'pure': pure, 'targets': targets})
 @pytest.mark.parametrize('split_type', ['random', 'scaffold_order', 'scaffold_random'])
 def test_only_graph(mgk_file, modelsets, split_type):
     model_type, n_estimators, n_samples, consensus_rule = modelsets
-    dataset = Dataset.from_df(df=df,
+    dataset = Dataset.from_df(df=df_regression,
                               pure_columns=['pure'],
                               target_columns=['targets'])
     dataset.graph_kernel_type = 'graph'

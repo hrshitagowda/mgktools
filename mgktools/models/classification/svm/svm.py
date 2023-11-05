@@ -6,9 +6,9 @@ from sklearn.svm import SVC
 
 
 class SVMClassifier(SVC):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._SVC = SVC(*args, **kwargs)
+    def __init__(self, kernel='rbf', C=1.0, probability=False):
+        super().__init__(kernel=kernel, C=C, probability=probability)
+        self._SVC = SVC(kernel=kernel, C=C, probability=probability)
 
     @property
     def kernel_(self):
@@ -28,12 +28,12 @@ class SVMClassifier(SVC):
         self.SVCs = []
         if y.ndim == 1:
             X_, y_ = self._remove_nan_X_y(X, y)
-            super().fit(X_, y_, sample_weight)
+            super().fit(X_, y_, sample_weight=sample_weight)
         else:
             for i in range(y.shape[1]):
                 SVC = copy.deepcopy(self._SVC)
                 X_, y_ = self._remove_nan_X_y(X, y[:, i])
-                SVC.fit(X_, y_, sample_weight)
+                SVC.fit(X_, y_, sample_weight=sample_weight)
                 self.SVCs.append(SVC)
 
     def predict(self, X):
