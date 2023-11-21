@@ -133,6 +133,13 @@ def get_kernel_config(dataset: Dataset,
         from mgktools.kernels.FeatureKernelConfig import FeatureKernelConfig
         return FeatureKernelConfig(**params)
     elif graph_kernel_type == 'graph':
+        for i, mgk_file in enumerate(mgk_hyperparameters_files):
+            if not os.path.exists(mgk_file):
+                saved_mgk_file = os.path.join(os.path.dirname(__file__), '../hyperparameters', mgk_file)
+                if os.path.exists(saved_mgk_file):
+                    mgk_hyperparameters_files[i] = saved_mgk_file
+                else:
+                    raise FileNotFoundError(f'{mgk_file} not found.')
         mgk_hyperparameters_files = [
             json.load(open(j)) for j in mgk_hyperparameters_files
         ]

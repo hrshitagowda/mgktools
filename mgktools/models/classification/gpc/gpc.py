@@ -227,7 +227,7 @@ class BinaryGaussianProcessClassifierLaplace(_BinaryGaussianProcessClassifierLap
         return self
 
 
-class GPC(_GPC):
+class GPC_MGK(_GPC):
     def fit(self, X, y):
         """Fit Gaussian process classification model
 
@@ -292,10 +292,10 @@ class GPC(_GPC):
         return self
 
 
-class GaussianProcessClassifier(GPC):
+class GaussianProcessClassifier(GPC_MGK):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._GPC = GPC(*args, **kwargs)
+        self._GPC = GPC_MGK(*args, **kwargs)
 
     @staticmethod
     def _remove_nan_X_y(X, y):
