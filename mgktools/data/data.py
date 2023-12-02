@@ -144,7 +144,7 @@ class MultiMolecularGraph2D:
         else:
             self.concentration = concentration
         graphs = [d.graph for d in self.data]
-        map(lambda x, y: x.update_concentration(y), graphs, self.concentration)
+        list(map(lambda x, y: x.update_concentration(y), graphs, self.concentration))
         # set graph
         self.graph_type = graph_type
         if graph_type == 'single_graph':
