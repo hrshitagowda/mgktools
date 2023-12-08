@@ -5,6 +5,7 @@ import math
 import numpy as np
 from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem, Descriptors
+import deepchem
 from descriptastorus.descriptors import rdDescriptors, rdNormalizedDescriptors
 
 
@@ -15,7 +16,7 @@ class FeaturesGenerator:
         self.features_generator_name = features_generator_name
         self.radius = radius
         self.num_bits = num_bits
-        if features_generator_name in ['morgan', 'morgan_count']:
+        if features_generator_name in ['morgan', 'morgan_count', 'circular']:
             assert self.radius is not None
             assert self.num_bits is not None
 
@@ -26,6 +27,8 @@ class FeaturesGenerator:
             return self.morgan_binary_features_generator(mol)
         elif self.features_generator_name == 'morgan_count':
             return self.morgan_counts_features_generator(mol)
+        elif self.features_generator_name == 'circular':
+            return self.circular_features_generator(mol)
         elif self.features_generator_name == 'rdkit_208':
             return self.rdkit_208_features_generator(mol)
         elif self.features_generator_name == 'rdkit_2d':
@@ -65,6 +68,13 @@ class FeaturesGenerator:
         features = np.zeros((1,))
         DataStructs.ConvertToNumpyArray(features_vec, features)
 
+        return features
+
+    @staticmethod
+    def circular_features_generator(mol: Union[str, Chem.Mol]) -> np.ndarray:
+        circular_fp_featurizer = deepchem.feat.CircularFingerprint(size=2048, radius=8,
+                                                                   sparse=False, smiles=True)
+        features = circular_fp_featurizer.featurize([mol]).ravel()
         return features
 
     @staticmethod

@@ -32,6 +32,7 @@ setuptools.setup(
         'rxntools>=0.0.2',
         'pycuda>=2022.1',
         'rdkit>=2022.9.2',
+        'deepchem==2.7.2.dev20231207083329'
     ],
     author='Yan Xiang',
     author_email='1993.xiangyan@gmail.com',

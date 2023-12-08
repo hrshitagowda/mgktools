@@ -27,6 +27,7 @@ def test_only_graph(testset):
 
 @pytest.mark.parametrize('testset', [
     ('morgan', 2048),
+    ('circular', 2048),
     ('rdkit_2d', 200),
     ('rdkit_2d_normalized', 200),
 ])
@@ -42,6 +43,7 @@ def test_only_fingerprints(testset):
 
 @pytest.mark.parametrize('testset', [
     ('morgan', 2048),
+    ('circular', 2048),
     ('rdkit_2d', 200),
     ('rdkit_2d_normalized', 200),
 ])

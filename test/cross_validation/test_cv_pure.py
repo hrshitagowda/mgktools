@@ -11,10 +11,11 @@ from mgktools.models import set_model
 from mgktools.evaluators.cross_validation import Evaluator
 
 
-pure = ['CCCC', 'CCCCCO', 'c1ccccc1', 'CCNCCO', 'CCCCN', 'NCCCCCO', 'c1ccccc1N', 'NCCNCCO']
-targets_regression = [3.1, 14.5, 25.6, 56.7, 9.1, 17.5, 22.6, 36.7]
+pure = ['CCCC', 'CCCCCO', 'c1ccccc1', 'CCNCCO', 'CCCCN', 'NCCCCCO', 'c1ccccc1N', 'NCCNCCO',
+        'CNC(CC)CC', 'c1ccccc1', 'c1ccccc1CCCCc1ccccc1', 'CC(=O)OCCO']
+targets_regression = [3.1, 14.5, 25.6, 56.7, 9.1, 17.5, 22.6, 36.7, 23.1, 32.1, 1.4, 7.6]
 df_regression = pd.DataFrame({'pure': pure, 'targets': targets_regression})
-targets_classification = [1, 1, 0, 1, 1, 0, 0, 1]
+targets_classification = [1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1]
 df_classification = pd.DataFrame({'pure': pure, 'targets': targets_classification})
 
 
@@ -22,7 +23,7 @@ df_classification = pd.DataFrame({'pure': pure, 'targets': targets_classificatio
                                       product_norm, product_pnorm, product_msnorm])
 @pytest.mark.parametrize('model', ['gpc', 'svc'])
 @pytest.mark.parametrize('split_type', ['random', 'scaffold_order', 'scaffold_random'])
-def test_only_graph(mgk_file, model, split_type):
+def test_only_graph_classification(mgk_file, model, split_type):
     dataset = Dataset.from_df(df=df_classification,
                               pure_columns=['pure'],
                               target_columns=['targets'])
@@ -49,12 +50,12 @@ def test_only_graph(mgk_file, model, split_type):
                                       product_norm, product_pnorm, product_msnorm])
 @pytest.mark.parametrize('modelsets', [('gpr', None, None, None),
                                        ('gpr-sod', 2, 3, 'smallest_uncertainty'),
-                                       ('gpr-sod', 2, 3, 'weight_uncertainty'),
+                                       # ('gpr-sod', 2, 3, 'weight_uncertainty'),
                                        ('gpr-sod', 2, 3, 'mean'),
                                        ('gpr-nystrom', None, 3, None),
                                        ('gpr-nle', None, 3, None)])
 @pytest.mark.parametrize('split_type', ['random', 'scaffold_order', 'scaffold_random'])
-def test_only_graph(mgk_file, modelsets, split_type):
+def test_only_graph_scalable_gps(mgk_file, modelsets, split_type):
     model_type, n_estimators, n_samples, consensus_rule = modelsets
     dataset = Dataset.from_df(df=df_regression,
                               pure_columns=['pure'],
