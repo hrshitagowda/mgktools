@@ -70,9 +70,8 @@ class FeaturesGenerator:
 
         return features
 
-    @staticmethod
-    def circular_features_generator(mol: Union[str, Chem.Mol]) -> np.ndarray:
-        circular_fp_featurizer = deepchem.feat.CircularFingerprint(size=2048, radius=8,
+    def circular_features_generator(self, mol: Union[str, Chem.Mol]) -> np.ndarray:
+        circular_fp_featurizer = deepchem.feat.CircularFingerprint(size=self.num_bits, radius=self.radius,
                                                                    sparse=False, smiles=True)
         features = circular_fp_featurizer.featurize([mol]).ravel()
         return features
