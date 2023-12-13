@@ -159,9 +159,13 @@ class Evaluator:
 
         X_train = dataset_train.X
         y_train = dataset_train.y
+        if y_train.shape[1] == 1:
+            y_train = y_train.ravel()
         repr_train = dataset_train.repr.ravel()
         X_test = dataset_test.X
         y_test = dataset_test.y
+        if y_test.shape[1] == 1:
+            y_test = y_test.ravel()
         repr_test = dataset_test.repr.ravel()
         # Find the most similar sample in training sets.
         if self.n_similar is None:
@@ -187,6 +191,8 @@ class Evaluator:
 
     def _evaluate_loocv(self):
         X, y, repr = self.dataset.X, self.dataset.y, self.dataset.repr.ravel()
+        if y.shape[1] == 1:
+            y = y.ravel()
         if self.n_similar is not None:
             y_similar = self.get_similar_info(X, X, repr, self.n_similar)
         else:

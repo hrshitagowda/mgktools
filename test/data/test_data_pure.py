@@ -12,7 +12,7 @@ df = pd.DataFrame({'pure': pure, 'targets_1': targets_1, 'targets_2': targets_2}
 
 
 @pytest.mark.parametrize('testset', [
-    (['targets_1'], (4,)),
+    (['targets_1'], (4, 1)),
     (['targets_1', 'targets_2'], (4, 2)),
 ])
 def test_only_graph(testset):
@@ -38,7 +38,7 @@ def test_only_fingerprints(testset):
                               target_columns=['targets_1'],
                               features_generator=[features_generator])
     assert dataset.X.shape == (4, n_features)
-    assert dataset.y.shape == (4,)
+    assert dataset.y.shape == (4, 1)
 
 
 @pytest.mark.parametrize('testset', [
@@ -55,4 +55,4 @@ def test_graph_fingerprints(testset):
                               features_generator=[features_generator])
     dataset.graph_kernel_type = 'graph'
     assert dataset.X.shape == (4, 1 + n_features)
-    assert dataset.y.shape == (4,)
+    assert dataset.y.shape == (4, 1)

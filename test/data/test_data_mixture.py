@@ -17,7 +17,7 @@ df = pd.DataFrame({'mixture': mixture, 'targets_1': targets_1, 'targets_2': targ
 
 
 @pytest.mark.parametrize('testset', [
-    (['targets_1'], (4,)),
+    (['targets_1'], (4, 1)),
     (['targets_1', 'targets_2'], (4, 2)),
 ])
 def test_only_graph(testset):
@@ -46,7 +46,7 @@ def test_only_fingerprints(testset):
                               features_generator=[features_generator],
                               features_combination=features_combination)
     assert dataset.X.shape == (4, n_features)
-    assert dataset.y.shape == (4,)
+    assert dataset.y.shape == (4, 1)
 
 
 @pytest.mark.parametrize('testset', [
@@ -66,4 +66,4 @@ def test_graph_fingerprints(testset):
                               features_combination=features_combination)
     dataset.graph_kernel_type = 'graph'
     assert dataset.X.shape == (4, 1 + n_features)
-    assert dataset.y.shape == (4,)
+    assert dataset.y.shape == (4, 1)

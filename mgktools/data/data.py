@@ -405,10 +405,7 @@ class Dataset:
     @property
     def y(self):
         y = concatenate([d.targets for d in self.data], axis=0)
-        if y is not None and y.shape[1] == 1:
-            return y.ravel()
-        else:
-            return y
+        return y
 
     @property
     def repr(self) -> np.ndarray:  # 2d array str.

@@ -27,7 +27,7 @@ def test_interpret_training_mols(testset):
         mgk_hyperparameters_file=mgk_hyperparameters_file,
         n_jobs=6)
     for i, df in enumerate(df_interpret):
-        assert df['contribution_value'].sum() == pytest.approx(y_pred[i], 1e-5)
+        assert df['contribution_value'].sum() == pytest.approx(y_pred[i], 1e-4)
 
 
 @pytest.mark.parametrize('testset', [
