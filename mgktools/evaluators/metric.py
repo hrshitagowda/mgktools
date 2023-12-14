@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from typing import Dict, Iterator, List, Optional, Union, Literal, Tuple
 import numpy as np
+import scipy
 from sklearn.metrics import (
     mean_squared_error,
     mean_absolute_error,
@@ -14,7 +15,7 @@ from sklearn.metrics import (
     matthews_corrcoef
 )
 Metric = Literal['roc-auc', 'accuracy', 'precision', 'recall', 'f1_score', 'mcc',
-                 'rmse', 'mae', 'mse', 'r2', 'max']
+                 'rmse', 'mae', 'mse', 'r2', 'max', 'spearman', 'kendall', 'pearson']
 
 
 def p2v(y: List[float], y_pred: List[float]):
@@ -51,5 +52,11 @@ def eval_metric_func(y: List[float], y_pred: List[float], metric: Metric) -> flo
         return np.sqrt(eval_metric_func(y, y_pred, 'mse'))
     elif metric == 'max':
         return np.max(abs(y - y_pred))
+    elif metric == 'spearman':
+        return scipy.stats.spearmanr(y, y_pred)[0]
+    elif metric == 'kendall':
+        return scipy.stats.kendalltau(y, y_pred)[0]
+    elif metric == 'pearson':
+        return scipy.stats.pearsonr(y, y_pred)[0]
     else:
         raise RuntimeError(f'Unsupported metrics {metric}')
