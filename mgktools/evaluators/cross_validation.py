@@ -235,6 +235,8 @@ class Evaluator:
                 'predict': y_pred,
                 'repr': repr,
             }
+            if y_std is not None:
+                pred_dict['uncertainty'] = y_std
         elif y.ndim == 2:
             assert y_pred.ndim == 2
             assert y_std is None or y_std.ndim == 2
