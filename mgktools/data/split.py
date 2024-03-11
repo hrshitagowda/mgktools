@@ -10,7 +10,12 @@ from tqdm import tqdm
 import math
 from logging import Logger
 import numpy as np
-from .data import Dataset
+
+
+def get_data_from_index(dataset, index):
+    dataset_new = dataset.copy()
+    dataset_new.data = [dataset.data[i] for i in index]
+    return dataset_new
 
 
 def generate_scaffold(mol: Union[str, Chem.Mol],
@@ -219,7 +224,5 @@ def dataset_split(dataset,
                                    seed=seed,
                                    logger=None)
     for s_index in split_index:
-        dataset_ = dataset.copy()
-        dataset_.data = [dataset.data[i] for i in s_index]
-        data.append(dataset_)
+        data.append(get_data_from_index(dataset, s_index))
     return data

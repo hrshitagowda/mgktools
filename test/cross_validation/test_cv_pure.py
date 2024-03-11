@@ -46,6 +46,32 @@ def test_only_graph_classification(mgk_file, model, split_type):
     shutil.rmtree('tmp')
 
 
+@pytest.mark.parametrize('nfold', [4, 5])
+def test_nfold_cv_classification(nfold):
+    model = 'gpc'
+    mgk_file = additive_norm
+    dataset = Dataset.from_df(df=df_classification,
+                              pure_columns=['pure'],
+                              target_columns=['targets'])
+    dataset.graph_kernel_type = 'graph'
+    kernel_config = get_kernel_config(dataset=dataset,
+                                      graph_kernel_type='graph',
+                                      mgk_hyperparameters_files=[mgk_file])
+    C = 1.0 if model == 'svc' else None
+    model = set_model(model, kernel=kernel_config.kernel, C=C)
+    Evaluator(save_dir='tmp',
+              dataset=dataset,
+              model=model,
+              task_type='binary',
+              metrics=['roc-auc', 'accuracy', 'precision', 'recall', 'f1_score', 'mcc'],
+              cross_validation='nfold',
+              nfold=nfold,
+              num_folds=2,
+              return_std=False,
+              verbose=True).evaluate()
+    shutil.rmtree('tmp')
+
+
 @pytest.mark.parametrize('mgk_file', [additive_norm, additive_pnorm, additive_msnorm,
                                       product_norm, product_pnorm, product_msnorm])
 @pytest.mark.parametrize('modelsets', [('gpr', None, None, None),

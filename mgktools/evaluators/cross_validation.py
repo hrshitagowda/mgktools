@@ -6,14 +6,11 @@ import math
 from tqdm import tqdm
 import pandas as pd
 import numpy as np
-from sklearn.metrics import (
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score
-)
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.model_selection import KFold
 from ..interpret.utils import save_mols_pkl
-from ..data import Dataset, dataset_split
+from ..data import Dataset
+from ..data.split import get_data_from_index, dataset_split
 from .metric import Metric, eval_metric_func
 
 
@@ -24,7 +21,9 @@ class Evaluator:
                  model,
                  task_type: Literal['regression', 'binary', 'multi-class'],
                  metrics: List[Metric],
-                 split_type: Literal['random', 'scaffold_order', 'scaffold_random'],
+                 cross_validation: Literal['nfold', 'loocv', 'Monte-Carlo'] = 'Monte-Carlo',
+                 nfold: int = None,
+                 split_type: Literal['random', 'scaffold_order', 'scaffold_random'] = None,
                  split_sizes: List[float] = None,
                  num_folds: int = 1,
                  return_std: bool = False,
@@ -70,6 +69,8 @@ class Evaluator:
         self.dataset = dataset
         self.model = model
         self.task_type = task_type
+        self.cross_validation = cross_validation
+        self.nfold = nfold
         self.split_type = split_type
         self.split_sizes = split_sizes
         self.metrics = metrics
@@ -101,7 +102,7 @@ class Evaluator:
         for metric in self.metrics:
             train_metrics_results[metric] = []
             test_metrics_results[metric] = []
-
+        # A external dataset is provided as the test set
         if external_test_dataset is not None:
             assert self.split_type is None
             dataset_train = self.dataset
@@ -114,31 +115,53 @@ class Evaluator:
                 if test_metrics is not None:
                     test_metrics_results[metric].append(test_metrics[j])
         else:
+            # repeat cross-validation for num_folds times
             for i in range(self.num_folds):
-                # data splits
-                if len(self.split_sizes) == 2:
-                    dataset_train, dataset_test = dataset_split(
-                        self.dataset,
-                        split_type=self.split_type,
-                        sizes=self.split_sizes,
-                        seed=self.seed + i)
-                # the second part, validation set, is abandoned.
-                elif len(self.split_sizes) == 3:
-                    dataset_train, _, dataset_test = dataset_split(
-                        self.dataset,
-                        split_type=self.split_type,
-                        sizes=self.split_sizes,
-                        seed=self.seed + i)
+                if self.cross_validation == 'Monte-Carlo':
+                    # data splits
+                    assert self.split_type is not None, 'split_type must be specified for Monte-Carlo cross-validation.'
+                    assert self.split_sizes is not None, 'split_sizes must be specified for Monte-Carlo cross-validation.'
+                    if len(self.split_sizes) == 2:
+                        dataset_train, dataset_test = dataset_split(
+                            self.dataset,
+                            split_type=self.split_type,
+                            sizes=self.split_sizes,
+                            seed=self.seed + i)
+                    # the second part, validation set, is abandoned.
+                    elif len(self.split_sizes) == 3:
+                        dataset_train, _, dataset_test = dataset_split(
+                            self.dataset,
+                            split_type=self.split_type,
+                            sizes=self.split_sizes,
+                            seed=self.seed + i)
+                    else:
+                        raise ValueError('split_sizes must be 2 or 3.')
+                    train_metrics, test_metrics = self.evaluate_train_test(
+                        dataset_train, dataset_test,
+                        output_tag='%d' % i)
+                    for j, metric in enumerate(self.metrics):
+                        if train_metrics is not None:
+                            train_metrics_results[metric].append(train_metrics[j])
+                        if test_metrics is not None:
+                            test_metrics_results[metric].append(test_metrics[j])
+                elif self.cross_validation == 'nfold':
+                    assert self.nfold is not None, 'nfold must be specified for nfold cross-validation.'
+                    kf = KFold(n_splits=self.nfold, shuffle=True, random_state=self.seed + i)
+                    kf.get_n_splits(self.dataset.X)
+                    for i_fold, (train_index, test_index) in enumerate(kf.split(self.dataset.X)):
+                        dataset_train = get_data_from_index(self.dataset, train_index)
+                        dataset_test = get_data_from_index(self.dataset, test_index)
+                        train_metrics, test_metrics = self.evaluate_train_test(
+                            dataset_train, dataset_test,
+                            output_tag='%d-%d' % (i, i_fold))
+                        for j, metric in enumerate(self.metrics):
+                            if train_metrics is not None:
+                                train_metrics_results[metric].append(train_metrics[j])
+                            if test_metrics is not None:
+                                test_metrics_results[metric].append(test_metrics[j])
                 else:
-                    raise ValueError('split_sizes must be 2 or 3.')
-                train_metrics, test_metrics = self.evaluate_train_test(
-                    dataset_train, dataset_test,
-                    output_tag='%d' % i)
-                for j, metric in enumerate(self.metrics):
-                    if train_metrics is not None:
-                        train_metrics_results[metric].append(train_metrics[j])
-                    if test_metrics is not None:
-                        test_metrics_results[metric].append(test_metrics[j])
+                    raise ValueError('Unsupported cross-validation method %s.' % self.cross_validation)
+
         if self.evaluate_train:
             self._log('\nTraining set:')
             for metric, result in train_metrics_results.items():
