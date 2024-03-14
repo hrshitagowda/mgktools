@@ -5,7 +5,6 @@ import math
 import numpy as np
 from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem, Descriptors
-import deepchem
 from descriptastorus.descriptors import rdDescriptors, rdNormalizedDescriptors
 
 
@@ -71,6 +70,7 @@ class FeaturesGenerator:
         return features
 
     def circular_features_generator(self, mol: Union[str, Chem.Mol]) -> np.ndarray:
+        import deepchem
         circular_fp_featurizer = deepchem.feat.CircularFingerprint(size=self.num_bits, radius=self.radius,
                                                                    sparse=False, smiles=True)
         features = circular_fp_featurizer.featurize([mol]).ravel()

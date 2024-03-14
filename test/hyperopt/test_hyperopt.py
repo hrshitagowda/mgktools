@@ -17,8 +17,17 @@ df = pd.DataFrame({'pure': pure, 'targets': targets})
 
 @pytest.mark.parametrize('mgk_file', [additive, additive_norm, additive_pnorm, additive_msnorm,
                                       product, product_norm, product_pnorm, product_msnorm])
-@pytest.mark.parametrize('split_type', ['random', 'loocv'])
-def test_bayesian_Graph(mgk_file, split_type):
+@pytest.mark.parametrize('split_set', [
+    ('leave-one-out', None, None, 1),
+    ('Monte-Carlo', None, 'random', 10),
+    ('n-fold', 5, None, 1)
+])
+def test_bayesian_Graph(mgk_file, split_set):
+    cross_validation, nfold, split_type, num_folds = split_set
+    if split_type is not None:
+        split_sizes = [0.8, 0.2]
+    else:
+        split_sizes = None
     dataset = Dataset.from_df(df=df,
                               pure_columns=['pure'],
                               target_columns=['targets'])
@@ -32,7 +41,11 @@ def test_bayesian_Graph(mgk_file, split_type):
                                                                 model_type='gpr',
                                                                 task_type='regression',
                                                                 metric='rmse',
+                                                                cross_validation=cross_validation,
                                                                 split_type=split_type,
+                                                                split_sizes=split_sizes,
+                                                                num_folds=num_folds,
+                                                                nfold=nfold,
                                                                 num_iters=2,
                                                                 alpha_bounds=(0.001, 0.02),
                                                                 d_alpha=0.001)
@@ -42,7 +55,11 @@ def test_bayesian_Graph(mgk_file, split_type):
                                                                 model_type='gpr',
                                                                 task_type='regression',
                                                                 metric='rmse',
+                                                                cross_validation=cross_validation,
                                                                 split_type=split_type,
+                                                                split_sizes=split_sizes,
+                                                                num_folds=num_folds,
+                                                                nfold=nfold,
                                                                 num_iters=2,
                                                                 alpha_bounds=(0.001, 0.02),
                                                                 d_alpha=0.001)
@@ -52,6 +69,11 @@ def test_bayesian_Graph(mgk_file, split_type):
                                                                 model_type='gpr',
                                                                 task_type='regression',
                                                                 metric='log_likelihood',
+                                                                cross_validation=cross_validation,
+                                                                split_type=split_type,
+                                                                split_sizes=split_sizes,
+                                                                num_folds=num_folds,
+                                                                nfold=nfold,
                                                                 num_iters=2,
                                                                 alpha_bounds=(0.001, 0.02),
                                                                 d_alpha=0.001)
@@ -59,7 +81,7 @@ def test_bayesian_Graph(mgk_file, split_type):
 
 @pytest.mark.parametrize('features_kernel_type', ['dot_product', 'rbf'])
 @pytest.mark.parametrize('features_generator', ['morgan', 'rdkit_2d_normalized'])
-@pytest.mark.parametrize('split_type', ['random', 'loocv'])
+@pytest.mark.parametrize('split_type', ['random'])
 def test_bayesian_Fingperprint(features_kernel_type, features_generator, split_type):
     dataset = Dataset.from_df(df=df,
                               pure_columns=['pure'],
@@ -78,7 +100,9 @@ def test_bayesian_Fingperprint(features_kernel_type, features_generator, split_t
                                                                 model_type='gpr',
                                                                 task_type='regression',
                                                                 metric='rmse',
+                                                                cross_validation='Monte-Carlo',
                                                                 split_type=split_type,
+                                                                split_sizes=[0.8, 0.2],
                                                                 num_iters=2,
                                                                 alpha_bounds=(0.001, 0.02),
                                                                 d_alpha=0.001)
@@ -101,5 +125,3 @@ def test_gradient_Graph(mgk_file, loss_function, optimizer):
               alpha=0.01,
               normalize_y=True)
     gpr.fit(dataset.X, dataset.y, loss=loss_function, verbose=True)
-
-

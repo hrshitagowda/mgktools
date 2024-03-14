@@ -21,7 +21,7 @@ class Evaluator:
                  model,
                  task_type: Literal['regression', 'binary', 'multi-class'],
                  metrics: List[Metric],
-                 cross_validation: Literal['nfold', 'loocv', 'Monte-Carlo'] = 'Monte-Carlo',
+                 cross_validation: Literal['nfold', 'leave-one-out', 'Monte-Carlo'] = 'Monte-Carlo',
                  nfold: int = None,
                  split_type: Literal['random', 'scaffold_order', 'scaffold_random'] = None,
                  split_sizes: List[float] = None,
@@ -94,7 +94,10 @@ class Evaluator:
 
     def evaluate(self, external_test_dataset: Optional[Dataset] = None):
         # Leave-One-Out cross validation
-        if self.split_type == 'loocv':
+        if self.cross_validation == 'leave-one-out':
+            assert self.nfold is None, 'nfold must be None for LOOCV.'
+            assert self.split_type is None, 'split_type must be None for LOOCV.'
+            assert self.split_sizes is None, 'split_sizes must be None for LOOCV.'
             return self._evaluate_loocv()
         # Initialization
         train_metrics_results = dict()
@@ -144,7 +147,7 @@ class Evaluator:
                             train_metrics_results[metric].append(train_metrics[j])
                         if test_metrics is not None:
                             test_metrics_results[metric].append(test_metrics[j])
-                elif self.cross_validation == 'nfold':
+                elif self.cross_validation == 'n-fold':
                     assert self.nfold is not None, 'nfold must be specified for nfold cross-validation.'
                     kf = KFold(n_splits=self.nfold, shuffle=True, random_state=self.seed + i)
                     kf.get_n_splits(self.dataset.X)
@@ -243,7 +246,7 @@ class Evaluator:
             self.model.fit(X, y)
 
     def predict(self, X, y: np.ndarray, repr: List[str], y_similar: List[str] = None):
-        if self.split_type == 'loocv':
+        if self.cross_validation == 'leave-one-out':
             y_pred, y_std = self.model.predict_loocv(X, y, return_std=True)
         elif self.return_std:
             y_pred, y_std = self.model.predict(X, return_std=True)

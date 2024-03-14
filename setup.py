@@ -34,6 +34,15 @@ setuptools.setup(
         'rdkit>=2022.9.2',
         'deepchem==2.7.2.dev20231207083329'
     ],
+    entry_points={
+        'console_scripts': [
+            'mgk_read_data=mgktools.exe.run:mgk_read_data',
+            'mgk_kernel_calc=mgktools.exe.run:mgk_kernel_calc',
+            'mgk_model_evaluate=mgktools.exe.run:mgk_model_evaluate',
+            'mgk_hyperopt=mgktools.exe.run:mgk_hyperopt',
+            'mgk_hyperopt_multi_datasets=mgktools.exe.run:mgk_hyperopt_multi_datasets',
+        ]
+    },
     author='Yan Xiang',
     author_email='1993.xiangyan@gmail.com',
     description='Marginalized graph kernel library for molecular property prediction',
@@ -46,5 +55,5 @@ setuptools.setup(
         'Operating System :: OS Independent',
     ],
     include_package_data=True,
-    package_data={'': ['hyperparameters/*.json']}
+    package_data={'': ['hyperparameters/configs/*.json']}
 )

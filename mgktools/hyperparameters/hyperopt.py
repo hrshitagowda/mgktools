@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from typing import Dict, Iterator, List, Optional, Union, Literal, Tuple
 import numpy as np
+import pandas as pd
 from hyperopt import fmin, hp, tpe
 from ..data import Dataset
 from ..models import set_model
@@ -35,7 +36,11 @@ def bayesian_optimization(save_dir: Optional[str],
                           task_type: Literal['regression', 'binary', 'multi-class'],
                           model_type: Literal['gpr', 'gpr-sod', 'gpr-nystrom', 'gpr-nle', 'svr', 'gpc', 'svc'],
                           metric: Literal[Metric, 'log_likelihood'],
-                          split_type: Literal['random', 'scaffold_balanced', 'loocv', 'assigned'] = None,
+                          cross_validation: Literal['nfold', 'loocv', 'Monte-Carlo'],
+                          nfold: int = None,
+                          split_type: Literal['random', 'scaffold_balanced', 'assigned'] = None,
+                          split_sizes: List[float] = None,
+                          num_folds: int = 10,
                           num_iters: int = 100,
                           alpha: float = 0.01,
                           alpha_bounds: Tuple[float, float] = None,
@@ -57,7 +62,8 @@ def bayesian_optimization(save_dir: Optional[str],
         maximize = False
     else:
         maximize = True
-
+    if cross_validation == 'loocv':
+        assert num_folds == 1
     hyperdicts = []
     results = []
 
@@ -93,9 +99,11 @@ def bayesian_optimization(save_dir: Optional[str],
                                           model=model,
                                           task_type=task_type,
                                           metrics=[metric],
+                                          cross_validation=cross_validation,
+                                          nfold=nfold,
                                           split_type=split_type,
-                                          split_sizes=[0.8, 0.2],
-                                          num_folds=1 if split_type == 'loocv' else 10,
+                                          split_sizes=split_sizes,
+                                          num_folds=num_folds,
                                           return_std=True if task_type == 'regression' else False,
                                           return_proba=False if task_type == 'regression' or model_type == 'gpr' else True,
                                           n_similar=None,
@@ -114,9 +122,11 @@ def bayesian_optimization(save_dir: Optional[str],
                                           model=model,
                                           task_type=task_type,
                                           metrics=[metric],
+                                          cross_validation=cross_validation,
+                                          nfold=nfold,
                                           split_type=split_type,
-                                          split_sizes=[0.8, 0.2],
-                                          num_folds=1 if split_type == 'loocv' else 10,
+                                          split_sizes=split_sizes,
+                                          num_folds=num_folds,
                                           return_std=True if task_type == 'regression' else False,
                                           return_proba=False if task_type == 'regression' or model_type == 'gpr' else True,
                                           n_similar=None,
@@ -167,5 +177,77 @@ def bayesian_optimization(save_dir: Optional[str],
                                       hyperdicts=hyperdicts,
                                       kernel_config=kernel_config,
                                       maximize=maximize)
+
+    return best_hyperdict, results, hyperdicts
+
+
+def bayesian_optimization_gpr_multi_datasets(save_dir: Optional[str],
+                          datasets: List[Dataset],
+                          kernel_config,
+                          tasks_type: List[Literal['regression', 'binary', 'multi-class']],
+                          metrics: List[Literal[Metric]],
+                          num_iters: int = 100,
+                          alpha: float = 0.01,
+                          alpha_bounds: Tuple[float, float] = None,
+                          d_alpha: float = None,
+                          seed: int = 0):
+    hyperdicts = []
+    results = []
+
+    def objective(hyperdict) -> Union[float, np.ndarray]:
+        hyperdicts.append(hyperdict.copy())
+        alpha_ = hyperdict.pop('alpha', alpha)
+        kernel_config.update_from_space(hyperdict)
+        obj = []
+        for i, dataset in enumerate(datasets):
+            metric = metrics[i]
+            assert dataset.graph_kernel_type == 'graph'
+            kernel = kernel_config.kernel
+            model = set_model(model_type='gpr',
+                              kernel=kernel,
+                              alpha=alpha_)
+            evaluator = Evaluator(save_dir=save_dir,
+                                  dataset=dataset,
+                                  model=model,
+                                  task_type=tasks_type[i],
+                                  metrics=[metric],
+                                  cross_validation='leave-one-out',
+                                  num_folds=1,
+                                  return_std=True,
+                                  return_proba=False,
+                                  n_similar=None,
+                                  verbose=False)
+            if metric in ['rmse', 'mae', 'mse', 'max']:
+                obj.append(evaluator.evaluate())
+            elif metric in ['r2', 'spearman', 'kendall', 'pearson',
+                            'roc-auc', 'accuracy', 'precision', 'recall', 'f1_score', 'mcc']:                
+                obj.append(-evaluator.evaluate())
+            else:
+                raise ValueError(f'metric "{metric}" not supported.')
+        results.append(obj)
+        result = np.mean(obj)
+        return result
+
+    SPACE = kernel_config.get_space()
+    
+    if alpha_bounds is None:
+        pass
+    elif d_alpha is None:
+        SPACE['alpha'] = hp.loguniform('alpha',
+                                       low=np.log(alpha_bounds[0]),
+                                       high=np.log(alpha_bounds[1]))
+    else:
+        SPACE['alpha'] = hp.quniform('alpha',
+                                     low=alpha_bounds[0],
+                                     high=alpha_bounds[1],
+                                     q=d_alpha)
+
+    fmin(objective, SPACE, algo=tpe.suggest, max_evals=num_iters,
+         rstate=np.random.seed(seed))
+    best_hyperdict = save_best_params(save_dir=save_dir,
+                                      results=np.mean(results, axis=0),
+                                      hyperdicts=hyperdicts,
+                                      kernel_config=kernel_config,
+                                      maximize=False)
 
     return best_hyperdict, results, hyperdicts

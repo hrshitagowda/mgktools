@@ -135,7 +135,7 @@ def get_kernel_config(dataset: Dataset,
     elif graph_kernel_type == 'graph':
         for i, mgk_file in enumerate(mgk_hyperparameters_files):
             if not os.path.exists(mgk_file):
-                saved_mgk_file = os.path.join(os.path.dirname(__file__), '../hyperparameters', mgk_file)
+                saved_mgk_file = os.path.join(os.path.dirname(__file__), '../hyperparameters/configs', mgk_file)
                 if os.path.exists(saved_mgk_file):
                     mgk_hyperparameters_files[i] = saved_mgk_file
                 else:

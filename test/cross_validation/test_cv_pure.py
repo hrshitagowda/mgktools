@@ -38,6 +38,7 @@ def test_only_graph_classification(mgk_file, model, split_type):
               model=model,
               task_type='binary',
               metrics=['roc-auc', 'accuracy', 'precision', 'recall', 'f1_score', 'mcc'],
+              cross_validation='Monte-Carlo',
               split_type=split_type,
               split_sizes=[0.75, 0.25],
               num_folds=2,
@@ -64,7 +65,7 @@ def test_nfold_cv_classification(nfold):
               model=model,
               task_type='binary',
               metrics=['roc-auc', 'accuracy', 'precision', 'recall', 'f1_score', 'mcc'],
-              cross_validation='nfold',
+              cross_validation='n-fold',
               nfold=nfold,
               num_folds=2,
               return_std=False,
@@ -108,4 +109,29 @@ def test_only_graph_scalable_gps(mgk_file, modelsets, split_type):
               return_std=True,
               verbose=True,
               n_core=n_samples if model_type == 'gpr-nystrom' else None).evaluate()
+    shutil.rmtree('tmp')
+
+
+def test_loocv():
+    model_type = 'gpr'
+    mgk_file = additive_msnorm
+    dataset = Dataset.from_df(df=df_regression,
+                              pure_columns=['pure'],
+                              target_columns=['targets'])
+    dataset.graph_kernel_type = 'graph'
+    kernel_config = get_kernel_config(dataset=dataset,
+                                      graph_kernel_type='graph',
+                                      mgk_hyperparameters_files=[mgk_file])
+    model = set_model(model_type,
+                      kernel=kernel_config.kernel,
+                      alpha=0.01)
+    Evaluator(save_dir='tmp',
+              dataset=dataset,
+              model=model,
+              task_type='regression',
+              metrics=['rmse', 'mae', 'mse', 'r2', 'max', 'spearman', 'kendall', 'pearson'],
+              cross_validation='leave-one-out',
+              num_folds=1,
+              return_std=True,
+              verbose=True).evaluate()
     shutil.rmtree('tmp')
