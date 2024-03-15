@@ -112,6 +112,7 @@ def bayesian_optimization(save_dir: Optional[str],
                     dataset.graph_kernel_type = 'graph'
                     dataset.clear_cookie()
                 else:
+                    # optimize hyperparameters for features with fixed graph kernel hyperparameters.
                     kernel = kernel_config.kernel
                     model = set_model(model_type=model_type,
                                       kernel=kernel,
@@ -217,6 +218,7 @@ def bayesian_optimization_gpr_multi_datasets(save_dir: Optional[str],
                                   return_proba=False,
                                   n_similar=None,
                                   verbose=False)
+            dataset.clear_cookie()
             if metric in ['rmse', 'mae', 'mse', 'max']:
                 obj.append(evaluator.evaluate())
             elif metric in ['r2', 'spearman', 'kendall', 'pearson',
