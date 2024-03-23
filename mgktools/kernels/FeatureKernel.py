@@ -22,7 +22,7 @@ class FeatureKernelConfig(BaseKernelConfig):
                     idx=idx, name=name, microdict={kernel_type: values}
                 )
                 self.microkernels_feature.append(microkernel)
-        # assert len(self.microkernels_feature) == 1
+        assert len(self.microkernels_feature) == 1
         self.update_kernel()
 
     def update_kernel(self):

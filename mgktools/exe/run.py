@@ -79,10 +79,8 @@ def mgk_kernel_calc(arguments=None):
         mgk_hyperparameters_files=args.graph_hyperparameters,
     )
     print("**\tCalculating kernel matrix\t**")
-    print(kernel_config.__class__)
     kernel_config = calc_precomputed_kernel_config(kernel_config=kernel_config, dataset=dataset)
     print("**\tEnd Calculating kernel matrix\t**")
-    print(kernel_config.__class__)
     kernel_pkl = os.path.join(args.save_dir, "kernel.pkl")
     pickle.dump(kernel_config, open(kernel_pkl, "wb"), protocol=4)
 
