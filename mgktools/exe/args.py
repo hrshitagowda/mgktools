@@ -24,16 +24,16 @@ class CommonArgs(Tap):
     For mixtures.
     Name of the columns containing multiple SMILES or InChI string and 
     corresponding concentration.
-    example: ['C', 0.5, 'CC', 0.3]
+    example: ["C", 0.5, "CC", 0.3]
     """
-    mixture_type: Literal['single_graph', 'multi_graph'] = 'single_graph'
+    mixture_type: Literal["single_graph", "multi_graph"] = "single_graph"
     """How the mixture is represented."""
     reaction_columns: List[str] = None
     """
     For chemical reactions.
     Name of the columns containing single reaction smarts string.
     """
-    reaction_type: Literal['reaction', 'agent', 'reaction+agent'] = 'reaction'
+    reaction_type: Literal["reaction", "agent", "reaction+agent"] = "reaction"
     """How the chemical reaction is represented."""
     feature_columns: List[str] = None
     """
@@ -42,7 +42,7 @@ class CommonArgs(Tap):
     """
     features_generator: List[str] = None
     """Method(s) of generating additional features_mol."""
-    features_combination: Literal['concat', 'mean'] = None
+    features_combination: Literal["concat", "mean"] = None
     """How to combine features vector for mixtures."""
     target_columns: List[str] = None
     """
@@ -86,21 +86,21 @@ class CommonArgs(Tap):
 
         if self.group_reading:
             if self.feature_columns is None:
-                raise ValueError('feature_columns must be assigned when using group_reading.')
+                raise ValueError("feature_columns must be assigned when using group_reading.")
 
 
 class KArgs(Tap):
-    graph_kernel_type: Literal['graph', 'pre-computed'] = None
+    graph_kernel_type: Literal["graph", "pre-computed"] = None
     """The type of kernel to use."""
     graph_hyperparameters: List[str] = None
     """hyperparameters file for graph kernel."""
-    features_kernel_type: Literal['dot_product', 'rbf'] = None
+    features_kernel_type: Literal["dot_product", "rbf"] = None
     """choose dot product kernel or rbf kernel for features."""
     features_hyperparameters: List[float] = None
     """hyperparameters for molecular features."""
-    features_hyperparameters_min: List[float] = None
+    features_hyperparameters_min: float = None
     """hyperparameters for molecular features."""
-    features_hyperparameters_max: List[float] = None
+    features_hyperparameters_max: float = None
     """hyperparameters for molecular features."""
     features_hyperparameters_file: str = None
     """JSON file contains features hyperparameters"""
@@ -113,10 +113,9 @@ class KArgs(Tap):
             if self.features_hyperparameters is None:
                 return None
             else:
-                return 'fixed'
+                return "fixed"
         else:
-            return [(self.features_hyperparameters_min[i], self.features_hyperparameters_max[i])
-                    for i in range(len(self.features_hyperparameters))]
+            return (self.features_hyperparameters_min, self.features_hyperparameters_max)
 
     @property
     def ignore_features_add(self) -> bool:
@@ -134,19 +133,19 @@ class KernelArgs(CommonArgs, KArgs):
 
 
 class TrainArgs(KernelArgs):
-    task_type: Literal['regression', 'binary', 'multi-class'] = None
+    task_type: Literal["regression", "binary", "multi-class"] = None
     """
     Type of task.
     """
-    model_type: Literal['gpr', 'svc', 'svr', 'gpc', 'gpr_nystrom', 'gpr_nle']
+    model_type: Literal["gpr", "svc", "svr", "gpc", "gpr_nystrom", "gpr_nle"]
     """Type of model to use"""
-    loss: Literal['loocv', 'likelihood'] = 'loocv'
+    loss: Literal["loocv", "likelihood"] = "loocv"
     """The target loss function to minimize or maximize."""
-    cross_validation: Literal['n-fold', 'leave-one-out', 'Monte-Carlo'] = 'Monte-Carlo'
+    cross_validation: Literal["n-fold", "leave-one-out", "Monte-Carlo"] = "Monte-Carlo"
     """The way to split data for cross-validation."""
     nfold: int = None
     """The number of fold for n-fold CV."""
-    split_type: Literal['random', 'scaffold_order', 'scaffold_random', 'stratified'] = None
+    split_type: Literal["random", "scaffold_order", "scaffold_random", "stratified"] = None
     """Method of splitting the data into train/test sets."""
     split_sizes: List[float] = None
     """Split proportions for train/test sets."""
@@ -164,8 +163,8 @@ class TrainArgs(KernelArgs):
     """Ensemble model with n estimators."""
     n_sample_per_model: int = None
     """The number of samples use in each estimator."""
-    ensemble_rule: Literal['smallest_uncertainty', 'weight_uncertainty',
-                           'mean'] = 'weight_uncertainty'
+    ensemble_rule: Literal["smallest_uncertainty", "weight_uncertainty",
+                           "mean"] = "weight_uncertainty"
     """The rule to combining prediction from estimators."""
     n_local: int = 500
     """The number of samples used in Naive Local Experts."""
@@ -199,7 +198,7 @@ class TrainArgs(KernelArgs):
         elif isinstance(self.alpha, float):
             return self.alpha
         elif os.path.exists(self.alpha):
-            return float(open(self.alpha, 'r').read())
+            return float(open(self.alpha, "r").read())
         else:
             return float(self.alpha)
 
@@ -210,7 +209,7 @@ class TrainArgs(KernelArgs):
         elif isinstance(self.C, float):
             return self.C
         elif os.path.exists(self.C):
-            return float(open(self.C, 'r').read())
+            return float(open(self.C, "r").read())
         else:
             return float(self.C)
 
@@ -219,46 +218,55 @@ class TrainArgs(KernelArgs):
 
     def process_args(self) -> None:
         super().process_args()
-        if self.task_type == 'regression':
-            assert self.model_type in ['gpr', 'gpr_nystrom', 'gpr_nle', 'svr']
+        if self.task_type == "regression":
+            assert self.model_type in ["gpr", "gpr_nystrom", "gpr_nle", "svr"]
             for metric in self.metrics:
-                assert metric in ['rmse', 'mae', 'mse', 'r2', 'max']
-        elif self.task_type == 'binary':
-            assert self.model_type in ['gpc', 'svc', 'gpr']
+                assert metric in ["rmse", "mae", "mse", "r2", "max"]
+        elif self.task_type == "binary":
+            assert self.model_type in ["gpc", "svc", "gpr"]
             for metric in self.metrics:
-                assert metric in ['roc-auc', 'accuracy', 'precision', 'recall', 'f1_score', 'mcc']
-        elif self.task_type == 'multi-class':
-            assert self.model_type in ['gpc', 'svc']
+                assert metric in ["roc-auc", "accuracy", "precision", "recall", "f1_score", "mcc"]
+        elif self.task_type == "multi-class":
+            assert self.model_type in ["gpc", "svc"]
             for metric in self.metrics:
-                assert metric in ['accuracy', 'precision', 'recall', 'f1_score']
+                assert metric in ["accuracy", "precision", "recall", "f1_score"]
 
-        if self.cross_validation == 'leave-one-out':
+        if self.cross_validation == "leave-one-out":
             assert self.num_folds == 1
-            assert self.model_type == 'gpr'
+            assert self.model_type == "gpr"
 
-        if self.model_type in ['gpr', 'gpr_nystrom']:
+        if self.model_type in ["gpr", "gpr_nystrom"]:
             assert self.alpha is not None
 
-        if self.model_type == 'svc':
+        if self.model_type == "svc":
             assert self.C is not None
 
-        if not hasattr(self, 'optimizer'):
+        if not hasattr(self, "optimizer"):
             self.optimizer = None
-        if not hasattr(self, 'batch_size'):
+        if not hasattr(self, "batch_size"):
             self.batch_size = None
 
         if self.save_model:
             assert self.num_folds == 1
             assert self.split_sizes[0] > 0.99999
-            assert self.model_type == 'gpr'
+            assert self.model_type == "gpr"
 
         if self.ensemble:
             assert self.n_sample_per_model is not None
 
         if self.atomic_attribution:
-            assert self.graph_kernel_type == 'graph', 'Set graph_kernel_type to graph for interpretability'
-            assert self.model_type == 'gpr', 'Set model_type to gpr for interpretability'
+            assert self.graph_kernel_type == "graph", "Set graph_kernel_type to graph for interpretability"
+            assert self.model_type == "gpr", "Set model_type to gpr for interpretability"
             assert self.ensemble is False
+
+
+class GradientOptArgs(TrainArgs):
+    optimizer: Literal["SLSQP", "L-BFGS-B", "BFGS", "fmin_l_bfgs_b", "sgd", "rmsprop", "adam"] = None
+    """Optimizer"""
+
+    def process_args(self) -> None:
+        super().process_args()
+        assert self.model_type == "gpr"
 
 
 class HyperoptArgs(TrainArgs):
@@ -272,8 +280,6 @@ class HyperoptArgs(TrainArgs):
     """Bounds of C used in SVC."""
     d_C: float = None
     """The step size of C to be optimized."""
-    optimizer: Literal['SLSQP', 'L-BFGS-B', 'BFGS', 'fmin_l_bfgs_b', 'sgd', 'rmsprop', 'adam'] = None
-    """Optimizer"""
     batch_size: int = None
     """batch_size"""
     num_splits: int = 1
@@ -284,12 +290,12 @@ class HyperoptArgs(TrainArgs):
     @property
     def minimize_score(self) -> bool:
         """Whether the model should try to minimize the score metric or maximize it."""
-        return self.metric in {'rmse', 'mae', 'mse', 'r2'}
+        return self.metric in {"rmse", "mae", "mse", "r2"}
 
     @property
     def opt_alpha(self) -> bool:
         if self.alpha_bounds is not None and \
-                self.model_type in ['gpr', 'gpr_nystrom']:
+                self.model_type in ["gpr", "gpr_nystrom"]:
             return True
         else:
             return False
@@ -297,19 +303,19 @@ class HyperoptArgs(TrainArgs):
     @property
     def opt_C(self) -> bool:
         if self.C_bounds is not None and \
-                self.model_type == 'svc':
+                self.model_type == "svc":
             return True
         else:
             return False
 
     def process_args(self) -> None:
         super().process_args()
-        if self.optimizer in ['L-BFGS-B']:
-            assert self.model_type == 'gpr'
+        if self.optimizer in ["L-BFGS-B"]:
+            assert self.model_type == "gpr"
 
 
 class EmbeddingArgs(KernelArgs):
-    embedding_algorithm: Literal['tSNE', 'kPCA'] = 'tSNE'
+    embedding_algorithm: Literal["tSNE", "kPCA"] = "tSNE"
     """Algorithm for data embedding."""
     n_components: int = 2
     """Dimension of the embedded space."""
@@ -348,16 +354,16 @@ class HyperoptMultiDatasetArgs(KArgs):
     For mixtures.
     Name of the columns containing multiple SMILES or InChI string and 
     corresponding concentration.
-    example: ['C', 0.5, 'CC', 0.3]
+    example: ["C", 0.5, "CC", 0.3]
     """
-    mixture_type: Literal['single_graph', 'multi_graph'] = 'single_graph'
+    mixture_type: Literal["single_graph", "multi_graph"] = "single_graph"
     """How the mixture is represented."""
     reaction_columns: str = None
     """
     For chemical reactions.
     Name of the columns containing single reaction smarts string.
     """
-    reaction_type: Literal['reaction', 'agent', 'reaction+agent'] = 'reaction'
+    reaction_type: Literal["reaction", "agent", "reaction+agent"] = "reaction"
     """How the chemical reaction is represented."""
     feature_columns: str = None
     """
@@ -366,7 +372,7 @@ class HyperoptMultiDatasetArgs(KArgs):
     """
     features_generator: List[str] = None
     """Method(s) of generating additional features_mol."""
-    features_combination: Literal['concat', 'mean'] = None
+    features_combination: Literal["concat", "mean"] = None
     """How to combine features vector for mixtures."""
     target_columns: str = None
     """
@@ -378,7 +384,7 @@ class HyperoptMultiDatasetArgs(KArgs):
     """Nomralize the additonal features_mol."""
     group_reading: bool = False
     """Find unique input strings first, then read the data."""
-    tasks_type: List[Literal['regression', 'binary', 'multi-class']]
+    tasks_type: List[Literal["regression", "binary", "multi-class"]]
     """
     Type of task.
     """
@@ -402,7 +408,7 @@ class HyperoptMultiDatasetArgs(KArgs):
         elif isinstance(self.alpha, float):
             return self.alpha
         elif os.path.exists(self.alpha):
-            return float(open(self.alpha, 'r').read())
+            return float(open(self.alpha, "r").read())
         else:
             return float(self.alpha)
         
@@ -434,12 +440,12 @@ class HyperoptMultiDatasetArgs(KArgs):
             os.mkdir(self.save_dir)
 
         none_list = [None] * len(self.data_paths)
-        self.pure_columns_ = [i.split(',') for i in self.pure_columns.split(';')] if self.pure_columns is not None else none_list
-        self.mixture_columns_ = [i.split(',') for i in self.mixture_columns.split(';')] if self.mixture_columns is not None else none_list
-        self.reaction_columns_ = [i.split(',') for i in self.reaction_columns.split(';')] if self.reaction_columns is not None else none_list
-        self.feature_columns_ = [i.split(',') for i in self.feature_columns.split(';')] if self.feature_columns is not None else none_list
-        self.target_columns_ = [i.split(',') for i in self.target_columns.split(';')]
+        self.pure_columns_ = [i.split(",") for i in self.pure_columns.split(";")] if self.pure_columns is not None else none_list
+        self.mixture_columns_ = [i.split(",") for i in self.mixture_columns.split(";")] if self.mixture_columns is not None else none_list
+        self.reaction_columns_ = [i.split(",") for i in self.reaction_columns.split(";")] if self.reaction_columns is not None else none_list
+        self.feature_columns_ = [i.split(",") for i in self.feature_columns.split(";")] if self.feature_columns is not None else none_list
+        self.target_columns_ = [i.split(",") for i in self.target_columns.split(";")]
 
         if self.group_reading:
             if self.feature_columns is None:
-                raise ValueError('feature_columns must be assigned when using group_reading.')
+                raise ValueError("feature_columns must be assigned when using group_reading.")

@@ -41,6 +41,8 @@ setuptools.setup(
             'mgk_model_evaluate=mgktools.exe.run:mgk_model_evaluate',
             'mgk_hyperopt=mgktools.exe.run:mgk_hyperopt',
             'mgk_hyperopt_multi_datasets=mgktools.exe.run:mgk_hyperopt_multi_datasets',
+            'mgk_optuna=mgktools.exe.run:mgk_optuna',
+            'mgk_optuna_multi_datasets=mgktools.exe.run:mgk_optuna_multi_datasets',
         ]
     },
     author='Yan Xiang',

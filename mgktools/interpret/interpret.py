@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from typing import Dict, Iterator, List, Optional, Union, Literal, Tuple
+from typing import List, Literal
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
 import json
 import rdkit.Chem.AllChem as Chem
 import math
-from ..hyperparameters import additive_pnorm
-from ..graph.hashgraph import HashGraph
-from ..data import Dataset
-from ..kernels.utils import get_kernel_config
-from ..kernels.GraphKernel import GraphKernelConfig
-from .gpr import InterpretableGaussianProcessRegressor as GPR
+from mgktools.hyperparameters import additive_pnorm
+from mgktools.graph.hashgraph import HashGraph
+from mgktools.data import Dataset
+from mgktools.kernels.utils import get_kernel_config
+from mgktools.kernels.GraphKernel import GraphKernelConfig
+from mgktools.interpret.gpr import InterpretableGaussianProcessRegressor as GPR
 
 
 def get_node_graphs(mol: Chem.Mol) -> List[HashGraph]:
@@ -145,9 +145,7 @@ def interpret_atoms(smiles_to_be_interpret: str,
     mol = Chem.MolFromSmiles(smiles_to_be_interpret)
     graphs_train = [HashGraph.from_smiles(s) for s in smiles_train]
     HashGraph.unify_datatype(graphs_train + [graph_to_be_interpret], inplace=True)
-    graph_hyperparameters = [json.load(open(mgk_hyperparameters_file))]
-    kernel = GraphKernelConfig(N_MGK=1,
-                               graph_hyperparameters=graph_hyperparameters).kernel
+    kernel = GraphKernelConfig(hyperdict=json.load(open(mgk_hyperparameters_file))).kernel
     # normalize_y must be false.
     gpr = GPR(kernel=kernel, alpha=alpha, normalize_y=False).fit(graphs_train, targets_train)
     y_pred, y_std = gpr.predict([graph_to_be_interpret], return_std=True)
@@ -212,9 +210,7 @@ def get_interpreted_mols(smiles_train: List[str],
     mols_train = [Chem.MolFromSmiles(s) for s in smiles_train]
     graphs = [HashGraph.from_rdkit(mol) for mol in mols_train]
     HashGraph.unify_datatype(graphs, inplace=True)
-    graph_hyperparameters = [json.load(open(mgk_hyperparameters_file))]
-    kernel = GraphKernelConfig(N_MGK=1,
-                               graph_hyperparameters=graph_hyperparameters).kernel
+    kernel = GraphKernelConfig(hyperdict=json.load(open(mgk_hyperparameters_file))).kernel
     gpr = GPR(kernel=kernel, alpha=alpha, normalize_y=False).fit(graphs, targets_train)
     mols_to_be_interpret = [Chem.MolFromSmiles(s) for s in smiles_to_be_interpret]
     graphs_to_be_interpret = [HashGraph.from_rdkit(mol) for mol in mols_to_be_interpret]

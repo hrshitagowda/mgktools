@@ -92,7 +92,7 @@ def test_bayesian_Fingperprint(features_kernel_type, features_generator, split_t
                                       graph_kernel_type=None,
                                       features_kernel_type=features_kernel_type,
                                       features_hyperparameters=[1.0],
-                                      features_hyperparameters_bounds=[(0.1, 10.0)],
+                                      features_hyperparameters_bounds=(0.1, 10.0),
                                       )
     best_hyperdict, results, hyperdicts = bayesian_optimization(save_dir=None,
                                                                 datasets=[dataset],

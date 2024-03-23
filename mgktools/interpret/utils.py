@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from typing import Dict, Iterator, List, Optional, Union, Literal, Tuple
+from typing import List
 import pickle
 import os
 import rdkit.Chem.AllChem as Chem

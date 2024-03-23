@@ -273,6 +273,10 @@ class CompositeDatapoint:
         return concatenate([self.X_single_graph, self.X_multi_graph, self.X_features_mol], axis=1)
 
     @property
+    def X_graph_repr(self) -> np.ndarray:  # 2d array.
+        return np.array([[d.__repr__() for d in self.data]])
+
+    @property
     def X_single_graph(self) -> np.ndarray:  # 2d array.
         return concatenate([d.X_single_graph for d in self.data], axis=1)
 
@@ -323,16 +327,20 @@ class SubDataset:
         return self.data.mols
 
     @property
-    def repr(self) -> np.ndarray:  # 2d array str.
+    def repr(self) -> np.ndarray:  # 1d array str.
         if self.features_add is None or self.ignore_features_add:
-            return np.asarray([[self.data.__repr__()]])
+            return np.array([self.data.__repr__()])
         else:
-            return np.asarray([list(map(lambda x: self.data.__repr__() + ';' + str(x), self.features_add.tolist()))]).T
+            return np.array(list(map(lambda x: self.data.__repr__() + ';' + str(x), self.features_add.tolist())))
 
     @property
     def X(self):
         return self.expand_features_add(self.data.X, features_add=True)
 
+    @property
+    def X_graph_repr(self) -> np.ndarray:  # 2d array graph.
+        return self.data.X_graph_repr.repeat(len(self), axis=0)
+    
     @property
     def X_graph(self) -> np.ndarray:  # 2d array graph.
         return concatenate([self.X_single_graph, self.X_multi_graph], axis=1)
@@ -400,7 +408,7 @@ class Dataset:
         elif self.graph_kernel_type == 'graph':
             return concatenate([self.X_graph, self.X_features], axis=1, dtype=object)
         else:
-            return concatenate([self.X_repr, self.X_features_add], axis=1, dtype=object)
+            return concatenate([self.X_graph_repr, self.X_features_add], axis=1, dtype=object)
 
     @property
     def y(self):
@@ -408,12 +416,12 @@ class Dataset:
         return y
 
     @property
-    def repr(self) -> np.ndarray:  # 2d array str.
+    def repr(self) -> np.ndarray:  # 1d array str.
         return concatenate([d.repr for d in self.data])
 
     @property
-    def X_repr(self) -> np.ndarray:  # 2d array str.
-        return concatenate([d.X_repr for d in self.data])
+    def X_graph_repr(self) -> np.ndarray:  # 2d array str.
+        return concatenate([d.X_graph_repr for d in self.data])
 
     @property
     def X_graph(self) -> Optional[np.ndarray]:

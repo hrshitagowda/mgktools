@@ -71,6 +71,37 @@ def test_only_features(features_generator, features_kernel, normalize_feature):
             assert np.sqrt(K[i, i] * K[j, j]) > K[i, j]
 
 
+@pytest.mark.parametrize('features_set', [
+    (['rdkit_2d_normalized'], rbf),
+    (['morgan'], dot_product),
+])
+@pytest.mark.parametrize('normalize_feature', [True, False])
+def test_only_features_from_file(features_set, normalize_feature):
+    features_generator, features_kernel = features_set
+    dataset = Dataset.from_df(df=df,
+                              pure_columns=['pure'],
+                              target_columns=['targets'],
+                              features_generator=features_generator)
+    if normalize_feature:
+        dataset.normalize_features_mol()
+    dataset.graph_kernel_type = None
+    N = len(dataset)
+    kernel_config = get_kernel_config(dataset=dataset,
+                                      graph_kernel_type=None,
+                                      mgk_hyperparameters_files=None,
+                                      features_hyperparameters_file=features_kernel)
+    K = kernel_config.kernel(dataset.X)
+    assert K.shape == (N, N)
+    # invertable
+    assert np.linalg.det(K) > 10 ** -5
+    for i in range(N):
+        for j in range(i + 1, N):
+            # symmetric
+            assert K[i, j] == pytest.approx(K[j, i], 1e-5)
+            # diagonal largest
+            assert np.sqrt(K[i, i] * K[j, j]) > K[i, j]
+
+
 @pytest.mark.parametrize('mgk_file', [additive, additive_norm, additive_pnorm, additive_msnorm,
                                       product, product_norm, product_pnorm, product_msnorm])
 @pytest.mark.parametrize('features_generator', [

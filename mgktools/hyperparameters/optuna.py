@@ -3,7 +3,8 @@
 from typing import Dict, Iterator, List, Optional, Union, Literal, Tuple
 import numpy as np
 import pandas as pd
-from hyperopt import fmin, hp, tpe
+import optuna
+from optuna.samplers import TPESampler
 from mgktools.data import Dataset
 from mgktools.models import set_model
 from mgktools.evaluators.cross_validation import Evaluator, Metric
@@ -12,25 +13,16 @@ from mgktools.kernels.PreComputed import calc_precomputed_kernel_config
 
 def save_best_params(
     save_dir: str,
-    results: List[float],
-    hyperdicts: List[Dict],
+    best_hyperdict: Dict,
     kernel_config,
-    maximize: bool,
 ):
-    if maximize:
-        best_idx = np.where(results == np.max(results))[0][0]
-    else:
-        best_idx = np.where(results == np.min(results))[0][0]
-    best = hyperdicts[best_idx].copy()
-    #
     if save_dir is not None:
-        if "alpha" in best:
-            open("%s/alpha" % save_dir, "w").write("%s" % best.pop("alpha"))
-        elif "C" in best:
-            open("%s/C" % save_dir, "w").write("%s" % best.pop("C"))
-        kernel_config.update_from_space(best)
+        if "alpha" in best_hyperdict:
+            open("%s/alpha" % save_dir, "w").write("%s" % best_hyperdict.pop("alpha"))
+        elif "C" in best_hyperdict:
+            open("%s/C" % save_dir, "w").write("%s" % best_hyperdict.pop("C"))
+        kernel_config.update_from_space(best_hyperdict)
         kernel_config.save(path=save_dir)
-    return best
 
 
 def bayesian_optimization(
@@ -71,13 +63,35 @@ def bayesian_optimization(
     if cross_validation == "loocv":
         assert num_folds == 1
 
-    hyperdicts = []
-    results = []
-    def objective(hyperdict) -> float:
-        hyperdicts.append(hyperdict.copy())
+    def objective(trial) -> Union[float, np.ndarray]:
+        hyperdict = kernel_config.get_trial(trial)
+        if alpha_bounds is None:
+            pass
+        elif d_alpha is None:
+            assert model_type in ["gpr", "gpr-sod", "gpr-nystrom", "gpr-nle"]
+            hyperdict["alpha"] = trial.suggest_float(
+                name="alpha", low=alpha_bounds[0], high=alpha_bounds[1], log=True
+            )
+        else:
+            assert model_type in ["gpr", "gpr-sod", "gpr-nystrom", "gpr-nle"]
+            hyperdict["alpha"] = trial.suggest_float(
+                name="alpha", low=alpha_bounds[0], high=alpha_bounds[1], step=d_alpha
+            )
+
+        if C_bounds is None:
+            pass
+        elif d_C is None:
+            hyperdict["C"] = trial.suggest_float(
+                name="C", low=C_bounds[0], high=C_bounds[1], log=True
+            )
+        else:
+            hyperdict["C"] = trial.suggest_float(
+                name="C", low=C_bounds[0], high=C_bounds[1], step=d_C
+            )
+
         alpha_ = hyperdict.pop("alpha", alpha)
         C_ = hyperdict.pop("C", C)
-        kernel_config.update_from_space(hyperdict)
+        kernel_config.update_from_trial(hyperdict)
         kernel_config.update_kernel()
         obj = []
         if metric == "log_likelihood":
@@ -88,7 +102,6 @@ def bayesian_optimization(
                 obj.append(model.log_marginal_likelihood(X=dataset.X, y=dataset.y))
                 dataset.clear_cookie()
             result = np.mean(obj)
-            results.append(result)
             return result
         else:
             for dataset in datasets:
@@ -152,53 +165,20 @@ def bayesian_optimization(
                     obj.append(evaluator.evaluate())
             result = np.mean(obj)
             if maximize:
-                results.append(-result)
                 return -result
             else:
-                results.append(result)
                 return result
 
-    SPACE = kernel_config.get_space()
-
-    if alpha_bounds is None:
-        pass
-    elif d_alpha is None:
-        assert model_type in ["gpr", "gpr-sod", "gpr-nystrom", "gpr-nle"]
-        SPACE["alpha"] = hp.loguniform(
-            "alpha", low=np.log(alpha_bounds[0]), high=np.log(alpha_bounds[1])
-        )
-    else:
-        assert model_type in ["gpr", "gpr-sod", "gpr-nystrom", "gpr-nle"]
-        SPACE["alpha"] = hp.quniform(
-            "alpha", low=alpha_bounds[0], high=alpha_bounds[1], q=d_alpha
-        )
-
-    if C_bounds is None:
-        pass
-    elif d_C is None:
-        SPACE["C"] = hp.loguniform(
-            "C", low=np.log(C_bounds[0]), high=np.log(C_bounds[1])
-        )
-    else:
-        SPACE["C"] = hp.loguniform("C", low=C_bounds[0], high=C_bounds[1], q=d_C)
-
-    fmin(
-        objective,
-        SPACE,
-        algo=tpe.suggest,
-        max_evals=num_iters,
-        rstate=np.random.seed(seed),
+    study = optuna.create_study(
+        study_name="optuna-study",
+        sampler=TPESampler(seed=seed),
+        storage="sqlite:///%s/optuna.db" % save_dir,
+        load_if_exists=True,
     )
-    if maximize:
-        results = [-r for r in results]
-    best_hyperdict = save_best_params(
-        save_dir=save_dir,
-        results=results,
-        hyperdicts=hyperdicts,
-        kernel_config=kernel_config,
-        maximize=maximize,
-    )
-    return best_hyperdict, results, hyperdicts
+    n_to_run = num_iters - len(study.trials)
+    if n_to_run > 0:
+        study.optimize(objective, n_trials=n_to_run)
+    save_best_params(save_dir=save_dir, best_hyperdict=study.best_params, kernel_config=kernel_config)
 
 
 def bayesian_optimization_gpr_multi_datasets(
@@ -213,11 +193,19 @@ def bayesian_optimization_gpr_multi_datasets(
     d_alpha: float = None,
     seed: int = 0,
 ):
-    hyperdicts = []
-    results = []
+    def objective(trial) -> Union[float, np.ndarray]:
+        hyperdict = kernel_config.get_trial(trial)
+        if alpha_bounds is None:
+            pass
+        elif d_alpha is None:
+            hyperdict["alpha"] = trial.suggest_float(
+                name="alpha", low=alpha_bounds[0], high=alpha_bounds[1], log=True
+            )
+        else:
+            hyperdict["alpha"] = trial.suggest_float(
+                name="alpha", low=alpha_bounds[0], high=alpha_bounds[1], step=d_alpha
+            )
 
-    def objective(hyperdict) -> Union[float, np.ndarray]:
-        hyperdicts.append(hyperdict.copy())
         alpha_ = hyperdict.pop("alpha", alpha)
         kernel_config.update_from_space(hyperdict)
         kernel_config.update_kernel()
@@ -258,36 +246,16 @@ def bayesian_optimization_gpr_multi_datasets(
                 obj.append(-evaluator.evaluate())
             else:
                 raise ValueError(f'metric "{metric}" not supported.')
-        results.append(obj)
         result = np.mean(obj)
         return result
 
-    SPACE = kernel_config.get_space()
-
-    if alpha_bounds is None:
-        pass
-    elif d_alpha is None:
-        SPACE["alpha"] = hp.loguniform(
-            "alpha", low=np.log(alpha_bounds[0]), high=np.log(alpha_bounds[1])
-        )
-    else:
-        SPACE["alpha"] = hp.quniform(
-            "alpha", low=alpha_bounds[0], high=alpha_bounds[1], q=d_alpha
-        )
-
-    fmin(
-        objective,
-        SPACE,
-        algo=tpe.suggest,
-        max_evals=num_iters,
-        rstate=np.random.seed(seed),
+    study = optuna.create_study(
+        study_name="optuna-study",
+        sampler=TPESampler(seed=seed),
+        storage="sqlite:///%s/optuna.db" % save_dir,
+        load_if_exists=True,
     )
-    best_hyperdict = save_best_params(
-        save_dir=save_dir,
-        results=np.mean(results, axis=0),
-        hyperdicts=hyperdicts,
-        kernel_config=kernel_config,
-        maximize=False,
-    )
-
-    return best_hyperdict, results, hyperdicts
+    n_to_run = num_iters - len(study.trials)
+    if n_to_run > 0:
+        study.optimize(objective, n_trials=n_to_run)
+    save_best_params(save_dir=save_dir, best_hyperdict=study.best_params, kernel_config=kernel_config)

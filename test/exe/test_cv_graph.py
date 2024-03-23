@@ -9,7 +9,7 @@ import pandas as pd
 sys.path.append('%s/..' % CWD)
 from mgktools.hyperparameters import (
     additive, additive_pnorm, additive_msnorm, additive_norm,
-    product, product_pnorm, product_msnorm, product_norm
+    product, product_pnorm, product_msnorm, product_norm,
 )
 from mgktools.exe.run import mgk_model_evaluate
 
@@ -116,7 +116,7 @@ def test_cv_PureGraph_regression_ExtTest(dataset, modelset):
 @pytest.mark.parametrize('split_set', [
     ('random', '10'),
 ])
-def test_cv_PureGraph_Regression_FeaturesAdd(dataset, group_reading, features_scaling, model, split_set):
+def test_cv_PureGraph_FeaturesAdd_Regression(dataset, group_reading, features_scaling, model, split_set):
     dataset, pure_columns, target_columns, features_columns = dataset
     save_dir = '%s/data/_%s_%s_%s_%s_%s' % (CWD, dataset, ','.join(pure_columns), ','.join(target_columns),
                                             group_reading, features_scaling)
@@ -155,7 +155,7 @@ def test_cv_PureGraph_Regression_FeaturesAdd(dataset, group_reading, features_sc
                                                 ['morgan'],
                                                 ['rdkit_2d', 'morgan_count']])
 @pytest.mark.parametrize('features_scaling', [True, False])
-def test_cv_PureGraph_Regression_FeaturesMol(dataset, model, split_set, features_generator, features_scaling):
+def test_cv_PureGraph_FeaturesMol_Regression(dataset, model, split_set, features_generator, features_scaling):
     dataset, pure_columns, target_columns = dataset
     save_dir = '%s/data/_%s_%s_%s_%s_%s' % (CWD, dataset, ','.join(pure_columns), ','.join(target_columns),
                                             ','.join(features_generator), features_scaling)
@@ -195,7 +195,7 @@ def test_cv_PureGraph_Regression_FeaturesMol(dataset, model, split_set, features
 @pytest.mark.parametrize('split_set', [
     ('random', '10'),
 ])
-def test_cv_PureGraph_Regression_FeaturesAddMol(dataset, group_reading, features_scaling, features_generator,
+def test_cv_PureGraph_FeaturesAddMol_Regression(dataset, group_reading, features_scaling, features_generator,
                                                 model, split_set):
     dataset, pure_columns, target_columns, features_columns = dataset
     save_dir = '%s/data/_%s_%s_%s_%s_%s_%s' % (CWD, dataset, ','.join(pure_columns), ','.join(target_columns),
@@ -262,7 +262,7 @@ def test_cv_PureGraph_Binary(dataset, model, split_set):
         os.remove('%s/test_%d.csv' % (save_dir, i))
 
 
-def test_cv_PureGraph_Binary_FeaturesAdd():
+def test_cv_PureGraph_FeaturesAdd_Binary():
     # TODO
     return
 
@@ -280,7 +280,7 @@ def test_cv_PureGraph_Binary_FeaturesAdd():
                                                 ['morgan'],
                                                 ['rdkit_2d', 'morgan_count']])
 @pytest.mark.parametrize('features_scaling', [True, False])
-def test_cv_PureGraph_Binary_FeaturesMol(dataset, model, split_set, features_generator, features_scaling):
+def test_cv_PureGraph_FeaturesMol_Binary(dataset, model, split_set, features_generator, features_scaling):
     dataset, pure_columns, target_columns = dataset
     save_dir = '%s/data/_%s_%s_%s_%s_%s' % (CWD, dataset, ','.join(pure_columns), ','.join(target_columns),
                                             ','.join(features_generator), features_scaling)
@@ -312,7 +312,7 @@ def test_cv_PureGraph_Binary_FeaturesMol(dataset, model, split_set, features_gen
         os.remove('%s/test_%d.csv' % (save_dir, i))
 
 
-def test_cv_PureGraph_Binary_FeaturesAddMol():
+def test_cv_PureGraph_FeaturesAddMol_Binary():
     # TODO
     return
 
@@ -331,7 +331,7 @@ def test_cv_MixtureGraph_Regression():
 @pytest.mark.parametrize('split_set', [
     ('random', '10'),
 ])
-def test_cv_MixtureGraph_Regression_FeaturesAdd(dataset, group_reading, features_scaling, model, split_set):
+def test_cv_MixtureGraph_FeaturesAdd_Regression(dataset, group_reading, features_scaling, model, split_set):
     dataset, pure_columns, target_columns, features_columns = dataset
     save_dir = '%s/data/_%s_%s_%s_%s_%s' % (CWD, dataset, ','.join(pure_columns), ','.join(target_columns),
                                             group_reading, features_scaling)
@@ -359,7 +359,7 @@ def test_cv_MixtureGraph_Regression_FeaturesAdd(dataset, group_reading, features
         os.remove('%s/test_%d.csv' % (save_dir, i))
 
 
-def test_cv_MixtureGraph_Regression_FeaturesMol():
+def test_cv_MixtureGraph_FeaturesMol_Regression():
     # TODO
     return
 
@@ -377,7 +377,7 @@ def test_cv_MixtureGraph_Regression_FeaturesMol():
                                                 ['morgan'],
                                                 ['rdkit_2d', 'morgan_count']])
 @pytest.mark.parametrize('features_combination', ['mean', 'concat'])
-def test_cv_MixtureGraph_Regression_FeaturesAddMol(dataset, group_reading, features_scaling, model, split_set,
+def test_cv_MixtureGraph_FeaturesAddMol_Regression(dataset, group_reading, features_scaling, model, split_set,
                                                    features_generator, features_combination):
     dataset, pure_columns, target_columns, features_columns = dataset
     save_dir = '%s/data/_%s_%s_%s_%s_%s_%s_%s' % (CWD, dataset, ','.join(pure_columns), ','.join(target_columns),
@@ -440,7 +440,7 @@ def test_cv_MixtureGraph_Binary(dataset, model, split_set):
         os.remove('%s/test_%d.csv' % (save_dir, i))
 
 
-def test_cv_MixtureGraph_Binary_FeaturesAdd():
+def test_cv_MixtureGraph_FeaturesAdd_Binary():
     # TODO
     return
 
@@ -457,7 +457,7 @@ def test_cv_MixtureGraph_Binary_FeaturesAdd():
 @pytest.mark.parametrize('split_set', [
     ('random', '10'),
 ])
-def test_cv_MixtureGraph_Binary_FeaturesMol(dataset, features_generator, features_combination, features_scaling,
+def test_cv_MixtureGraph_FeaturesMol_Binary(dataset, features_generator, features_combination, features_scaling,
                                             model, split_set):
     dataset, pure_columns, target_columns = dataset
     save_dir = '%s/data/_%s_%s_%s_%s_%s_%s' % (CWD, dataset, ','.join(pure_columns), ','.join(target_columns),
@@ -487,6 +487,6 @@ def test_cv_MixtureGraph_Binary_FeaturesMol(dataset, features_generator, feature
         os.remove('%s/test_%d.csv' % (save_dir, i))
 
 
-def test_cv_MixtureGraph_Binary_FeaturesAddMol():
+def test_cv_MixtureGraph_FeaturesAddMol_Binary():
     # TODO
     return

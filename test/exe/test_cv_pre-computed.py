@@ -79,6 +79,8 @@ def test_cv_PreComputed_PureGraph_Regression_FeaturesAdd(dataset, group_reading,
         '--save_dir', '%s' % save_dir,
         '--graph_kernel_type', 'graph',
         '--graph_hyperparameters', '%s' % graph_hyperparameters,
+        '--features_kernel_type', 'rbf',
+        '--features_hyperparameters', '100.0'
     ]
     mgk_kernel_calc(arguments)
     assert os.path.exists('%s/kernel.pkl' % save_dir)

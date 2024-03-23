@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import os
-import pickle
-from typing import Dict, Iterator, List, Optional, Union, Literal, Tuple
-
+from typing import Dict, Any, Union
 import numpy as np
-
-from .FeatureKernelConfig import FeatureKernelConfig
-from .HybridKernel import *
+import copy
+from mgktools.data import Dataset
+from mgktools.kernels.base import BaseKernelConfig
+from mgktools.kernels.GraphKernel import GraphKernelConfig
+from mgktools.kernels.HybridKernel import HybridKernelConfig
 
 
 class PreComputedKernel:
@@ -64,36 +63,94 @@ class PreComputedKernel:
         return clone
 
     def get_params(self, deep=False):
-        return dict(
-            X=self.X,
-            K=self.K,
-            theta=self.theta_
+        return dict(X=self.X, K=self.K, theta=self.theta_)
+
+
+class PreComputedKernelConfig(BaseKernelConfig):
+    def __init__(
+        self,
+        kernel_dict: Dict,
+    ):
+        X = kernel_dict["X"]
+        K = kernel_dict["K"]
+        theta = kernel_dict["theta"]
+        self.kernel = PreComputedKernel(X, K, theta)
+
+    def update_kernel(self):
+        pass
+
+    def get_space(self) -> Dict:
+        return {}
+
+    def update_from_space(self, space: Dict[str, Any]):
+        pass
+
+    def get_trial(self, trial) -> Dict:
+        return {}
+
+    def update_from_trial(self, trial: Dict[str, Any]):
+        pass
+
+    def update_from_theta(self):
+        pass
+    
+
+def calc_precomputed_kernel_config(
+    kernel_config: Union[GraphKernelConfig, HybridKernelConfig], dataset: Dataset
+) -> Union[PreComputedKernelConfig, HybridKernelConfig]:
+    if isinstance(kernel_config, GraphKernelConfig):
+        # Single graph kernel, no feature kernel.
+        assert dataset.N_features_mol == dataset.N_features_add == 0
+        kernel_dict = kernel_config.get_kernel_dict(
+            dataset.X_mol, dataset.X_graph_repr.ravel()
         )
-
-
-class PreComputedKernelConfig(FeatureKernelConfig):
-    def __init__(self, kernel_dict: Dict,
-                 features_kernel_type: Literal['dot_product', 'rbf'] = None,
-                 n_features: int = 0,
-                 features_hyperparameters: List[float] = None,
-                 features_hyperparameters_bounds: List[Tuple[float, float]] = None):
-        super().__init__(features_kernel_type, n_features, features_hyperparameters, features_hyperparameters_bounds)
-        if n_features == 0:
-            self.kernel = self.get_preCalc_kernel(kernel_dict)
-        else:
-            kernels = [self.get_preCalc_kernel(kernel_dict)]
-            kernels += self._get_features_kernel()
-            composition = [(0,)] + \
-                          [tuple(np.arange(1, n_features + 1))]
-            self.kernel = HybridKernel(
-                kernel_list=kernels,
-                composition=composition,
-                hybrid_rule='product',
+        return PreComputedKernelConfig(kernel_dict=kernel_dict)
+    else:
+        n_MGK = sum([isinstance(kc, GraphKernelConfig) for kc in kernel_config.kernel_configs])
+        if dataset.N_features_mol == dataset.N_features_add == 0:
+            # multiple graph kernels, no feature kernel.
+            assert n_MGK == len(kernel_config.kernel_configs)
+            precomputed_kernel_configs = []
+            for i in range(n_MGK):
+                kc = kernel_config.kernel_configs[i]
+                kernel_dict = kc.get_kernel_dict(
+                    dataset.X_mol[:, i], dataset.X_graph_repr[:, i].ravel()
+                )
+                precomputed_kernel_configs.append(
+                    PreComputedKernelConfig(kernel_dict=kernel_dict)
+                )
+            return HybridKernelConfig(
+                kernel_configs=precomputed_kernel_configs,
+                composition=kernel_config.composition,
+                hybrid_rule=kernel_config.hybrid_rule,
             )
-
-    @staticmethod
-    def get_preCalc_kernel(kernel_dict: Dict):
-        X = kernel_dict['X']
-        K = kernel_dict['K']
-        theta = kernel_dict['theta']
-        return PreComputedKernel(X, K, theta)
+        elif dataset.N_features_mol == 0 and dataset.N_features_add != 0:
+            # multiple graph kernel + additional features.
+            precomputed_kernel_configs = []
+            for i in range(n_MGK):
+                kc = kernel_config.kernel_configs[i]
+                kernel_dict = kc.get_kernel_dict(
+                    dataset.X_mol[:, i], dataset.X_graph_repr[:, i].ravel()
+                )
+                precomputed_kernel_configs.append(
+                    PreComputedKernelConfig(kernel_dict=kernel_dict)
+                )
+            return HybridKernelConfig(
+                kernel_configs=precomputed_kernel_configs
+                + kernel_config.kernel_configs[n_MGK:],
+                composition=kernel_config.composition,
+                hybrid_rule=kernel_config.hybrid_rule,
+            )
+        elif dataset.N_features_mol != 0 and dataset.N_features_add == 0:
+            # multiple graph kernels + molecular features, no feature kernel.
+            if n_MGK == 1:
+                assert len(kernel_config.kernel_configs) == 2
+                kernel_dict = kernel_config.get_kernel_dict(
+                    dataset.X_mol, dataset.X_graph_repr.ravel()
+                )
+                return PreComputedKernelConfig(kernel_dict=kernel_dict)
+            else:
+                raise NotImplementedError
+        else:
+            # multiple graph kernels + molecular features + additional features.
+            raise NotImplementedError

@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from typing import Dict, Iterator, List, Optional, Union, Literal, Tuple
+from typing import List
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
 import rdkit.Chem.AllChem as Chem
-from .subgraph import get_fragments_smarts
-from .interpret import interpret_substructures
+from mgktools.interpret.subgraph import get_fragments_smarts
+from mgktools.interpret.interpret import interpret_substructures
 
 
 def substructure_search(mols_sorted: List[Chem.Mol],
