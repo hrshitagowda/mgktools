@@ -27,12 +27,13 @@ setuptools.setup(
         'scikit-learn>=0.24.1',
         'tqdm>=4.62.0',
         'hyperopt>=0.2.5',
+        'optuna>=3.6.0',
         'scipy>=1.6.2',
         'mendeleev>=0.7',
         'rxntools>=0.0.2',
         'pycuda>=2022.1',
         'rdkit>=2022.9.2',
-        'deepchem==2.7.2.dev20231207083329'
+        'deepchem==2.7.2.dev20231207083329',
     ],
     entry_points={
         'console_scripts': [
