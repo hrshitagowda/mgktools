@@ -153,7 +153,6 @@ class MicroKernel:
             assert self.bounds != "fixed"
             self.value = space[self.unique_name]
         else:
-            print(self.unique_name, space, self.bounds)
             assert self.bounds == "fixed"
 
     def get_trial(self, trial) -> Dict:

@@ -25,7 +25,12 @@ def get_kernel_config(
 ):
     if kernel_pkl is not None and os.path.exists(kernel_pkl):
         return pickle.load(open(kernel_pkl, "rb"))
-    
+
+    if graph_kernel_type == "pre-computed":
+        n_features = dataset.N_features_add
+    else:
+        n_features = dataset.N_features_mol + dataset.N_features_add
+
     if features_hyperparameters_file is not None:
         features_kernel_config = FeatureKernelConfig.load(
             path=".", name=features_hyperparameters_file, idx=0
@@ -34,10 +39,6 @@ def get_kernel_config(
         if features_kernel_type is None:
             features_kernel_config = None
         else:
-            if graph_kernel_type == "pre-computed":
-                n_features = dataset.N_features_add
-            else:
-                n_features = dataset.N_features_mol + dataset.N_features_add
             assert n_features != 0
 
             if len(features_hyperparameters) == 1:
