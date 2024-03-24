@@ -192,4 +192,40 @@ def calc_precomputed_kernel_config(
                 )
         else:
             # multiple graph kernels + molecular features + additional features.
-            raise NotImplementedError
+            assert dataset.N_features_mol % n_MGK == 0
+            n_features_per_mol = int(dataset.N_features_mol / n_MGK)
+            assert dataset.X_mol.shape[1] == n_MGK * (1 + n_features_per_mol)
+            assert len(kernel_config.kernel_configs) == n_MGK + 1, f'{len(kernel_config.kernel_configs)}, {n_MGK}'
+            assert isinstance(kernel_config.kernel_configs[-1].microkernels_feature[0].value, float)
+            precomputed_kernel_configs = []
+            for i in range(n_MGK):
+                kc1 = kernel_config.kernel_configs[i]
+                kc2 = kernel_config.kernel_configs[-1]
+                kc = HybridKernelConfig(
+                    kernel_configs=[kc1, kc2],
+                    composition=[(0,), tuple(range(1, n_features_per_mol + 1))],
+                    hybrid_rule=kernel_config.hybrid_rule,
+                )
+                X_graph = dataset.X_mol[:, i : i + 1]
+                X_features = dataset.X_mol[
+                    :,
+                    n_MGK
+                    + i * n_features_per_mol : n_MGK
+                    + (i + 1) * n_features_per_mol,
+                ]
+                kernel_dict = kc.get_kernel_dict(
+                    concatenate(
+                        [X_graph, X_features],
+                        axis=1,
+                        dtype=object,
+                    ),
+                    dataset.X_graph_repr[:, i].ravel(),
+                )
+                precomputed_kernel_configs.append(
+                    PreComputedKernelConfig(kernel_dict=kernel_dict)
+                )
+            return HybridKernelConfig(
+                kernel_configs=precomputed_kernel_configs + [kernel_config.kernel_configs[-1]],
+                composition=kernel_config.composition[:n_MGK] + [tuple(range(n_MGK, n_MGK + dataset.N_features_add))],
+                hybrid_rule=kernel_config.hybrid_rule,
+            )
