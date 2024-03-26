@@ -22,7 +22,6 @@ from graphdot.microprobability import (
     UniformProbability,
     AssignProbability,
 )
-from mgktools.kernels.normalization import Norm, NormalizationMolSize
 
 
 class MicroKernel:
@@ -99,6 +98,7 @@ class MicroKernel:
         elif self.kernel_type == "Assign_p":
             return AssignProbability(self.value, bounds)
         elif self.kernel_type == "Normalization":
+            from mgktools.kernels.normalization import Norm, NormalizationMolSize
             assert self.name == self.kernel_type
             if self.value == True:
                 return Norm

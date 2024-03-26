@@ -5,7 +5,6 @@ import numpy as np
 import copy
 from mgktools.data import Dataset
 from mgktools.kernels.base import BaseKernelConfig
-from mgktools.kernels.GraphKernel import GraphKernelConfig
 from mgktools.kernels.HybridKernel import HybridKernelConfig
 from mgktools.data.data import concatenate
 
@@ -97,8 +96,9 @@ class PreComputedKernelConfig(BaseKernelConfig):
 
 
 def calc_precomputed_kernel_config(
-    kernel_config: Union[GraphKernelConfig, HybridKernelConfig], dataset: Dataset
+    kernel_config: BaseKernelConfig, dataset: Dataset
 ) -> Union[PreComputedKernelConfig, HybridKernelConfig]:
+    from mgktools.kernels.GraphKernel import GraphKernelConfig
     if isinstance(kernel_config, GraphKernelConfig):
         # Single graph kernel, no feature kernel.
         assert dataset.N_features_mol == dataset.N_features_add == 0
