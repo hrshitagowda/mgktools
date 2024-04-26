@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
+import itertools
 from typing import Dict, Iterator, List, Optional, Union, Literal, Tuple
 import math
 from tqdm import tqdm
@@ -12,6 +13,36 @@ from ..interpret.utils import save_mols_pkl
 from ..data import Dataset
 from ..data.split import get_data_from_index, dataset_split
 from .metric import Metric, eval_metric_func
+
+
+def data_augmentation(dataset: Dataset) -> List[Dataset]:
+    """
+    Data augmentation for the dataset.
+    """
+    n_p = len(dataset.data[0].data.data_p)
+    n_m = len(dataset.data[0].data.data_m)
+    n_cr = len(dataset.data[0].data.data_cr)
+    n_3d = len(dataset.data[0].data.data_3d)
+    assert n_p > 1 or n_m > 1 or n_cr > 1 or n_3d > 1, 'No need to augment data.'
+    datasets_copy = []
+    # create all shuffling index
+    for idx_p in itertools.permutations(range(n_p)):
+        for idx_m in itertools.permutations(range(n_m)):
+            for idx_cr in itertools.permutations(range(n_cr)):
+                for idx_3d in itertools.permutations(range(n_3d)):
+                    dataset_copy = dataset.copy()
+                    for data in dataset_copy.data:
+                        if n_p > 1:
+                            data.data.data_p = [data.data.data_p[i] for i in idx_p]
+                        if n_m > 1:
+                            data.data.data_m = [data.data.data_m[i] for i in idx_m]
+                        if n_cr > 1:
+                            data.data.data_cr = [data.data.data_cr[i] for i in idx_cr]
+                        if n_3d > 1:
+                            data.data.data_3d = [data.data.data_3d[i] for i in idx_3d]
+                        data.data.data = data.data.data_p + data.data.data_m + data.data.data_cr + data.data.data_3d
+                    datasets_copy.append(dataset_copy)
+    return datasets_copy
 
 
 class Evaluator:
@@ -29,6 +60,7 @@ class Evaluator:
                  return_std: bool = False,
                  return_proba: bool = False,
                  evaluate_train: bool = False,
+                 augment_data: bool = False,
                  n_similar: Optional[int] = None,
                  kernel=None,
                  n_core: int = None,
@@ -43,7 +75,9 @@ class Evaluator:
         save_dir:
             The directory that save all output files.
         dataset:
+            The dataset for cross-validation or the training data.
         model:
+            The machine learning model.
         task_type:
         split_type
         split_sizes
@@ -54,6 +88,8 @@ class Evaluator:
         return_proba:
             If True, the classification model will output probability.
         evaluate_train
+        augment_data:
+            If True, the dataset will be augmented by shuffling the order of the equivalent columns of the data.
         n_similar:
             n_similar molecules in the training set that are most similar to the molecule to be predicted will be
             outputed.
@@ -78,6 +114,7 @@ class Evaluator:
         self.return_std = return_std
         self.return_proba = return_proba
         self.evaluate_train = evaluate_train
+        self.augment_data = augment_data
         self.n_similar = n_similar
         self.kernel = kernel
         self.n_core = n_core
@@ -180,6 +217,11 @@ class Evaluator:
                             output_tag: str = '0') -> Tuple[Optional[List[float]],
                                                             Optional[
                                                             List[float]]]:
+        if self.augment_data:
+            for dataset in data_augmentation(dataset_train)[1:]:
+                dataset_train.data.extend(dataset.data)
+            for dataset in data_augmentation(dataset_test)[1:]:
+                dataset_test.data.extend(dataset.data)
         train_log = 'train_%s.csv' % output_tag
         test_log = 'test_%s.csv' % output_tag
 

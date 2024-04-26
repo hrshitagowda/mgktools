@@ -30,6 +30,7 @@ from mgktools.exe.args import (
     EmbeddingArgs,
 )
 from mgktools.exe.model import set_model
+from mgktools.evaluators.cross_validation import data_augmentation
 
 
 def mgk_read_data(arguments=None):
@@ -78,6 +79,10 @@ def mgk_kernel_calc(arguments=None):
         features_hyperparameters_file=args.features_hyperparameters_file,
         mgk_hyperparameters_files=args.graph_hyperparameters,
     )
+    if args.augment_data:
+        datasets = data_augmentation(dataset)
+        for d in data_augmentation(dataset)[1:]:
+            dataset.data.extend(d.data)
     print("**\tCalculating kernel matrix\t**")
     kernel_config = calc_precomputed_kernel_config(kernel_config=kernel_config, dataset=dataset)
     print("**\tEnd Calculating kernel matrix\t**")
@@ -136,6 +141,7 @@ def mgk_model_evaluate(arguments=None):
         return_std=True if args.model_type == "gpr" else False,
         return_proba=True if args.task_type == "binary" else False,
         evaluate_train=False,
+        augment_data=args.augment_data,
         n_similar=None,
         kernel=None,
         n_core=args.n_core,

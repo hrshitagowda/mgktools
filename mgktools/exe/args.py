@@ -128,6 +128,9 @@ class KArgs(Tap):
 
 
 class KernelArgs(CommonArgs, KArgs):
+    augment_data: bool = False
+    """If True, the dataset will be augmented by shuffling the order of the equivalent columns of the data."""
+
     def process_args(self) -> None:
         super().process_args()
 

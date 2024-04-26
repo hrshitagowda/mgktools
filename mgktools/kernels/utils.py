@@ -32,6 +32,14 @@ def get_kernel_config(
         n_features = dataset.N_features_mol + dataset.N_features_add
 
     if features_hyperparameters_file is not None:
+        if not os.path.exists(features_hyperparameters_file):
+            saved_features_hyperparameters_file = os.path.join(
+                os.path.dirname(__file__), "../hyperparameters/configs", features_hyperparameters_file
+            )
+            if os.path.exists(saved_features_hyperparameters_file):
+                features_hyperparameters_file = saved_features_hyperparameters_file
+            else:
+                raise FileNotFoundError(f"{features_hyperparameters_file} not found.")
         features_kernel_config = FeatureKernelConfig.load(
             path=".", name=features_hyperparameters_file, idx=0
         )
