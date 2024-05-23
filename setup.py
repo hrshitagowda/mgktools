@@ -34,6 +34,8 @@ setuptools.setup(
         'pycuda>=2022.1',
         'rdkit>=2022.9.2',
         'deepchem==2.7.2.dev20231207083329',
+        'typed-argument-parser',
+        'ipython',
     ],
     entry_points={
         'console_scripts': [

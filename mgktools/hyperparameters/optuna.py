@@ -34,7 +34,7 @@ def bayesian_optimization(
         "gpr", "gpr-sod", "gpr-nystrom", "gpr-nle", "svr", "gpc", "svc"
     ],
     metric: Literal[Metric, "log_likelihood"],
-    cross_validation: Literal["nfold", "loocv", "Monte-Carlo"],
+    cross_validation: Literal["n-fold", "leave-one-out", "Monte-Carlo"],
     nfold: int = None,
     split_type: Literal["random", "scaffold_balanced", "assigned"] = None,
     split_sizes: List[float] = None,
