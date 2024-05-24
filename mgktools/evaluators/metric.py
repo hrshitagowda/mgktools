@@ -49,7 +49,7 @@ def eval_metric_func(y: List[float], y_pred: List[float], metric: Metric) -> flo
     elif metric == 'mse':
         return mean_squared_error(y, y_pred)
     elif metric == 'rmse':
-        return np.sqrt(eval_metric_func(y, y_pred, 'mse'))
+        return mean_squared_error(y, y_pred, squared=False)
     elif metric == 'max':
         return np.max(abs(y - y_pred))
     elif metric == 'spearman':
