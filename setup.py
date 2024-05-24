@@ -22,7 +22,7 @@ long_description = read('README.md')
 setuptools.setup(
     name='mgktools',
     version=__version__,
-    python_requires='>=3.8',
+    python_requires='>=3.10',
     install_requires=[
         'scikit-learn>=0.24.1',
         'tqdm>=4.62.0',
@@ -53,7 +53,7 @@ setuptools.setup(
     description='Marginalized graph kernel library for molecular property prediction',
     long_description=long_description,
     url='https://github.com/xiangyan93/mgktools',
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_namespace_packages(include=['mgktools', 'mgktools.*']),
     classifiers=[
         'Programming Language :: Python',
         'License :: OSI Approved :: MIT License',
