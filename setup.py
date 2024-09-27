@@ -42,6 +42,7 @@ setuptools.setup(
             'mgk_read_data=mgktools.exe.run:mgk_read_data',
             'mgk_kernel_calc=mgktools.exe.run:mgk_kernel_calc',
             'mgk_model_evaluate=mgktools.exe.run:mgk_model_evaluate',
+            'mgk_embedding=mgktools.exe.run:mgk_embedding',
             'mgk_hyperopt=mgktools.exe.run:mgk_hyperopt',
             'mgk_hyperopt_multi_datasets=mgktools.exe.run:mgk_hyperopt_multi_datasets',
             'mgk_optuna=mgktools.exe.run:mgk_optuna',
