@@ -130,15 +130,14 @@ class FeaturesGenerator:
                 ds_n.append(np.float32(v))
         return np.array(ds_n)
 
-    @staticmethod
-    def layered_features_generator(mol: Union[str, Chem.Mol]) -> np.ndarray:
+    def layered_features_generator(self, mol: Union[str, Chem.Mol]) -> np.ndarray:
         """
         Generates a layered feature vector for a molecule.
 
         :param mol: A molecule (i.e., either a SMILES or an RDKit molecule).
         :return: A 1D numpy array containing the layered feature vector.
         """
-        return np.array(Chem.LayeredFingerprint(mol).ToList())
+        return np.array(Chem.LayeredFingerprint(mol, fpSize=self.num_bits).ToList())
     
     def torsion_features_generator(self, mol: Union[str, Chem.Mol]) -> np.ndarray:
         mol = Chem.MolFromSmiles(mol) if isinstance(mol, str) else mol
