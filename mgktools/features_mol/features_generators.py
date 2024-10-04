@@ -12,12 +12,15 @@ from descriptastorus.descriptors import rdDescriptors, rdNormalizedDescriptors
 class FeaturesGenerator:
     def __init__(self, features_generator_name: Union[str, Callable],
                  radius: int = 2,
-                 num_bits: int = 2048):
+                 num_bits: int = 1024):
         self.features_generator_name = features_generator_name
         self.radius = radius
         self.num_bits = num_bits
+        
         if features_generator_name in ['morgan', 'morgan_count']:
             self.generator = AllChem.GetMorganGenerator(radius=radius, fpSize=num_bits)
+        elif features_generator_name == 'feat_morgan':
+            self.generator = AllChem.GetMorganFingerprintAsBitVect
         elif features_generator_name == 'circular':
             import deepchem
             self.generator = deepchem.feat.CircularFingerprint(radius=radius, size=num_bits, 
@@ -40,6 +43,8 @@ class FeaturesGenerator:
             return self.morgan_binary_features_generator(mol)
         elif self.features_generator_name == 'morgan_count':
             return self.morgan_counts_features_generator(mol)
+        elif self.features_generator_name == 'feat_morgan':
+            return self.generator(mol, useFeatures=True)
         elif self.features_generator_name == 'circular':
             return self.circular_features_generator(mol)
         elif self.features_generator_name == 'rdkit_208':
@@ -88,6 +93,17 @@ class FeaturesGenerator:
         """
         mol = Chem.MolFromSmiles(mol) if isinstance(mol, str) else mol
         return np.array(self.generator.GetFingerprint(mol).ToList())
+    def feat_morgan_features_generator(self, mol: Union[str, Chem.Mol]) -> np.ndarray:
+        """
+        Generates a feature-based Morgan fingerprint for a molecule.
+
+        :param mol: A molecule (i.e., either a SMILES or an RDKit molecule).
+        :param radius: Morgan fingerprint radius.
+        :param num_bits: Number of bits in Morgan fingerprint.
+        :return: A 1D numpy array containing the feature-based Morgan fingerprint.
+        """
+        mol = Chem.MolFromSmiles(mol) if isinstance(mol, str) else mol
+        return np.array(AllChem.GetMorganFingerprintAsBitVect(mol, radius=self.radius, nBits=self.num_bits, useFeatures=True).ToList())
 
     def circular_features_generator(self, mol: Union[str, Chem.Mol]) -> np.ndarray:
         features = self.generator.featurize([mol]).ravel()
@@ -130,14 +146,15 @@ class FeaturesGenerator:
                 ds_n.append(np.float32(v))
         return np.array(ds_n)
 
-    def layered_features_generator(self, mol: Union[str, Chem.Mol]) -> np.ndarray:
+    @staticmethod
+    def layered_features_generator(mol: Union[str, Chem.Mol]) -> np.ndarray:
         """
         Generates a layered feature vector for a molecule.
 
         :param mol: A molecule (i.e., either a SMILES or an RDKit molecule).
         :return: A 1D numpy array containing the layered feature vector.
         """
-        return np.array(Chem.LayeredFingerprint(mol, fpSize=self.num_bits).ToList())
+        return np.array(Chem.LayeredFingerprint(mol).ToList())
     
     def torsion_features_generator(self, mol: Union[str, Chem.Mol]) -> np.ndarray:
         mol = Chem.MolFromSmiles(mol) if isinstance(mol, str) else mol
